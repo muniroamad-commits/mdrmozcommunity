@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Gestão — MDR MozCommunity</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .admin-shell { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 76px); }
+  .admin-sidebar { border-right: 1px solid var(--line); padding: 24px 18px; background: var(--paper-raised); }
+  .admin-sidebar h4 { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 20px 0 8px; }
+  .admin-sidebar h4:first-child { margin-top: 0; }
+  .filter-option { display: block; width: 100%; text-align: left; background: none; border: none; padding: 7px 10px; border-radius: 7px; font-size: 0.88rem; color: var(--slate); cursor: pointer; font-family: var(--font-body); }
+  .filter-option:hover { background: var(--teal-tint); }
+  .filter-option.is-active { background: var(--teal); color: #fff; font-weight: 600; }
+  .admin-main { padding: 24px 28px; }
+  .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+  .search-input { max-width: 320px; }
+  table.cases { width: 100%; border-collapse: collapse; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  table.cases th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); padding: 12px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-weight: 500;}
+  table.cases td { padding: 13px 14px; border-bottom: 1px solid var(--line); font-size: 0.88rem; vertical-align: middle; }
+  table.cases tr:last-child td { border-bottom: none; }
+  table.cases tr { cursor: pointer; }
+  table.cases tr:hover td { background: var(--teal-tint); }
+  .ref-code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-muted); }
+
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(24,36,48,0.5); z-index: 90; display: none; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); background: var(--paper); z-index: 91; transform: translateX(100%); transition: transform 0.22s ease; overflow-y: auto; display: none; }
+  .drawer.is-open { display: block; }
+  .drawer.is-open.animate-in { transform: translateX(0); }
+  .drawer-inner { padding: 26px; }
+  .drawer-close { position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 1.4rem; line-height: 1; }
+  .kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; font-size: 0.88rem; margin: 16px 0; }
+  .kv dt { color: var(--ink-muted); }
+  .kv dd { margin: 0; }
+  .attach-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 8px; font-size: 0.85rem; }
+
+  @media (max-width: 860px) {
+    .admin-shell { grid-template-columns: 1fr; }
+    .admin-sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
+      <span class="brand-name">MDR MozCommunity<small>Painel de Gestão — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <span class="small-note" id="admin-name-label" style="margin-right:8px;"></span>
+      <a href="users.html" id="users-link" style="display:none;">Utilizadores</a>
+      <a href="#" id="logout-link">Sair</a>
+    </nav>
+  </div>
+</header>
+
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <h4>Estado</h4>
+    <button class="filter-option is-active" data-filter="status" data-value="">Todos os casos</button>
+    <button class="filter-option" data-filter="status" data-value="recebida">Recebida</button>
+    <button class="filter-option" data-filter="status" data-value="em_analise">Em análise</button>
+    <button class="filter-option" data-filter="status" data-value="em_resolucao">Em resolução</button>
+    <button class="filter-option" data-filter="status" data-value="resolvida">Resolvida</button>
+    <button class="filter-option" data-filter="status" data-value="encerrada">Encerrada</button>
+
+    <h4>Província</h4>
+    <div id="province-filters"></div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div>
+        <h2 style="margin:0;">Casos registados</h2>
+        <p class="small-note" style="margin:2px 0 0;" id="results-count">A carregar...</p>
+      </div>
+      <input type="search" class="search-input" id="search-input" placeholder="Pesquisar por assunto, código, comunidade, nome ou telefone...">
+    </div>
+
+    <table class="cases">
+      <thead>
+        <tr><th>Código</th><th>Assunto</th><th>Localização</th><th>Componente</th><th>Estado</th><th>Recebido</th></tr>
+      </thead>
+      <tbody id="cases-tbody">
+        <tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>
+      </tbody>
+    </table>
+  </main>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-inner" id="drawer-content"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/store.js"></script>
+<script>
+let currentAdmin = null;
+MDR.onAuthChange(admin => {
+  if (!admin) {
+    window.location.href = 'login.html';
+    return;
+  }
+  if (admin.noProfile) {
+    alert('A tua conta não tem permissões configuradas nesta plataforma. Contacta o administrador para te atribuir um nível de acesso.');
+    MDR.adminLogout().then(() => window.location.href = 'login.html');
+    return;
+  }
+  currentAdmin = admin;
+
+  const roleLabels = { admin: 'Administrador geral', provincial: `Gestor provincial — ${admin.province}`, readonly: 'Só leitura' };
+  document.getElementById('admin-name-label').textContent = `${admin.name} · ${roleLabels[admin.role] || admin.role}`;
+  document.getElementById('users-link').style.display = admin.role === 'admin' ? '' : 'none';
+
+  // Nível "provincial": a província fica fixa e não pode ser alterada.
+  if (admin.role === 'provincial') {
+    state.province = admin.province;
+  }
+
+  renderProvinceFilters();
+  loadCases();
+});
+
+document.getElementById('logout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  MDR.adminLogout().then(() => window.location.href = 'login.html');
+});
+
+let state = { status: '', province: '', q: '' };
+
+function renderProvinceFilters() {
+  const provinceFiltersEl = document.getElementById('province-filters');
+  if (currentAdmin && currentAdmin.role === 'provincial') {
+    provinceFiltersEl.innerHTML = `<button class="filter-option is-active" disabled>${currentAdmin.province} (a tua província)</button>`;
+    return;
+  }
+  provinceFiltersEl.innerHTML = `<button class="filter-option is-active" data-filter="province" data-value="">Todas</button>` +
+    MDR.getProvinces().map(p => `<button class="filter-option" data-filter="province" data-value="${p}">${p}</button>`).join('');
+}
+
+document.querySelector('.admin-sidebar').addEventListener('click', handleFilterClick);
+
+function handleFilterClick(e) {
+  const btn = e.target.closest('.filter-option');
+  if (!btn || btn.disabled) return;
+  const group = btn.dataset.filter;
+  document.querySelectorAll(`.filter-option[data-filter="${group}"]`).forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  state[group] = btn.dataset.value;
+  loadCases();
+}
+
+let searchTimeout;
+document.getElementById('search-input').addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => { state.q = e.target.value; loadCases(); }, 350);
+});
+
+async function loadCases() {
+  const tbody = document.getElementById('cases-tbody');
+  tbody.innerHTML = `<tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>`;
+
+  try {
+    const rows = await MDR.listComplaints(state);
+    document.getElementById('results-count').textContent = `${rows.length} caso(s) encontrado(s)`;
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="small-note" style="padding:24px;">Nenhum caso encontrado com estes filtros.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(c => `
+      <tr data-id="${c.reference_code}">
+        <td class="ref-code">${c.reference_code}</td>
+        <td>${escapeHtml(c.subject)}</td>
+        <td>${[c.province, c.district].filter(Boolean).join(', ') || '—'}</td>
+        <td>${escapeHtml(c.project || '—')}</td>
+        <td><span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span></td>
+        <td class="small-note">${formatDate(c.created_at)}</td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.addEventListener('click', () => openDrawer(tr.dataset.id));
+    });
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="6"><div class="alert alert-error">Não foi possível carregar os casos.</div></td></tr>`;
+  }
+}
+
+const overlay = document.getElementById('drawer-overlay');
+const drawer = document.getElementById('drawer');
+overlay.addEventListener('click', closeDrawer);
+
+function closeDrawer() {
+  drawer.classList.remove('animate-in');
+  overlay.style.display = 'none';
+  setTimeout(() => { drawer.style.display = 'none'; }, 200);
+}
+
+async function openDrawer(referenceCode) {
+  drawer.style.display = 'block';
+  overlay.style.display = 'block';
+  requestAnimationFrame(() => drawer.classList.add('animate-in'));
+  document.getElementById('drawer-content').innerHTML = `<div class="skeleton" style="height:200px;"></div>`;
+
+  try {
+    const c = await MDR.getComplaint(referenceCode);
+    if (!c) throw new Error('Caso não encontrado.');
+    renderDrawer(c);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('drawer-content').innerHTML = `<div class="alert alert-error">Não foi possível carregar o caso.</div>`;
+  }
+}
+
+function renderDrawer(c) {
+  const meta = [c.province, c.district, c.posto_administrativo].filter(Boolean).join(', ');
+  const attachmentsHtml = (c.attachments || []).length ? c.attachments.map(a => `
+    <div class="attach-item">
+      <span>${escapeHtml(a.name)}</span>
+      <a href="${a.dataUrl}" download="${escapeHtml(a.name)}" class="btn btn-secondary btn-sm">Ver</a>
+    </div>
+  `).join('') : '<p class="small-note">Sem anexos.</p>';
+
+  const updatesHtml = (c.updates || []).map(u => `
+    <li>
+      <span class="node"></span>
+      <div class="tl-status">${MDR.STATUS_LABELS[u.status] || u.status}${u.admin_name ? ` · <span class="small-note">${escapeHtml(u.admin_name)}</span>` : ''}</div>
+      ${u.note ? `<div class="tl-note">${escapeHtml(u.note)}</div>` : ''}
+      <div class="tl-date">${formatDate(u.created_at)} ${u.visible_to_public ? '' : '· <span title="Nota interna, não visível ao público">interno</span>'}</div>
+    </li>
+  `).join('');
+
+  const canEdit = currentAdmin && currentAdmin.role !== 'readonly';
+  const updateSectionHtml = canEdit ? `
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Actualizar caso</h4>
+    <div id="update-alert"></div>
+    <form id="update-form" class="form-card" style="padding:18px;">
+      <div class="field">
+        <label for="upd-status">Novo estado</label>
+        <select id="upd-status">
+          <option value="recebida" ${c.status==='recebida'?'selected':''}>Recebida</option>
+          <option value="em_analise" ${c.status==='em_analise'?'selected':''}>Em análise</option>
+          <option value="em_resolucao" ${c.status==='em_resolucao'?'selected':''}>Em resolução</option>
+          <option value="resolvida" ${c.status==='resolvida'?'selected':''}>Resolvida</option>
+          <option value="encerrada" ${c.status==='encerrada'?'selected':''}>Encerrada</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="upd-priority">Prioridade</label>
+        <select id="upd-priority">
+          <option value="baixa" ${c.priority==='baixa'?'selected':''}>Baixa</option>
+          <option value="normal" ${c.priority==='normal'?'selected':''}>Normal</option>
+          <option value="alta" ${c.priority==='alta'?'selected':''}>Alta</option>
+          <option value="urgente" ${c.priority==='urgente'?'selected':''}>Urgente</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="upd-note">Nota / actualização</label>
+        <textarea id="upd-note" placeholder="Descreva a acção tomada ou o ponto de situação"></textarea>
+      </div>
+      <div class="checkbox-row" style="margin-bottom:16px;">
+        <input type="checkbox" id="upd-visible" checked>
+        <label for="upd-visible">Visível para quem apresentou o caso (em "Acompanhar Preocupação")</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Guardar actualização</button>
+    </form>
+  ` : `
+    <div class="small-note" style="margin-top:20px; padding:12px; border:1px solid var(--line); border-radius:8px;">A tua conta tem acesso apenas de leitura — não podes alterar este caso.</div>
+  `;
+
+  document.getElementById('drawer-content').innerHTML = `
+    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    <div class="small-note" style="font-family:var(--font-mono)">${c.reference_code}</div>
+    <h2 style="font-size:1.4rem; margin:4px 0 10px;">${escapeHtml(c.subject)}</h2>
+    <span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span>
+
+    <dl class="kv">
+      <dt>Componente</dt><dd>${escapeHtml(c.project || '—')}</dd>
+      <dt>Localização</dt><dd>${escapeHtml(meta || '—')}</dd>
+      <dt>Comunidade</dt><dd>${escapeHtml(c.community)}</dd>
+      <dt>Ocorrência</dt><dd>${c.occurrence_date || '—'}</dd>
+      <dt>Contacto</dt><dd>${c.is_anonymous ? 'Anónimo' : [c.contact_name, c.contact_phone, c.contact_email].filter(Boolean).map(escapeHtml).join(' · ') || '—'}</dd>
+      <dt>Prioridade</dt><dd style="text-transform:capitalize;">${c.priority}</dd>
+    </dl>
+
+    ${c.description ? `<p>${escapeHtml(c.description)}</p>` : ''}
+
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Anexos</h4>
+    ${attachmentsHtml}
+
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Histórico</h4>
+    <ul class="thread-timeline">${updatesHtml}</ul>
+
+    ${updateSectionHtml}
+  `;
+
+  if (!canEdit) return;
+
+  document.getElementById('update-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertEl = document.getElementById('update-alert');
+    alertEl.innerHTML = '';
+    try {
+      await MDR.updateComplaint(c.reference_code, {
+        status: document.getElementById('upd-status').value,
+        priority: document.getElementById('upd-priority').value,
+        note: document.getElementById('upd-note').value || null,
+        visible_to_public: document.getElementById('upd-visible').checked,
+      });
+      openDrawer(c.reference_code);
+      loadCases();
+    } catch (err) {
+      console.error(err);
+      alertEl.innerHTML = `<div class="alert alert-error">${err.message || 'Não foi possível guardar a actualização.'}</div>`;
+    }
+  });
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-MZ', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

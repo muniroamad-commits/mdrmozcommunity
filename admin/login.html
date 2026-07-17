@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar — MDR MozCommunity</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
+      <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <a href="../submeter.html">Apresentar Preocupação</a>
+      <a href="../acompanhar.html">Acompanhar Preocupação</a>
+      <a href="../estatisticas.html">Estatísticas</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="container" style="max-width:420px;">
+      <div class="text-center" style="margin-bottom:24px;">
+        <span class="eyebrow">Área reservada</span>
+        <h1 style="font-size:1.9rem;">Entrar</h1>
+        <p class="small-note">Acesso exclusivo à equipa de gestão de casos.</p>
+      </div>
+      <div id="alert-box"></div>
+      <form id="login-form" class="form-card">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="username" placeholder="nome@exemplo.org">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-btn" style="margin-top:8px;">Entrar</button>
+      </form>
+      <p class="small-note text-center" style="margin-top:16px;">Os utilizadores administrativos são criados em Firebase Console → Authentication → Users.</p>
+    </div>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/store.js"></script>
+<script>
+MDR.onAuthChange(admin => {
+  if (admin) window.location.href = 'dashboard.html';
+});
+
+const form = document.getElementById('login-form');
+const alertBox = document.getElementById('alert-box');
+const loginBtn = document.getElementById('login-btn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  alertBox.innerHTML = '';
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = '<span class="spinner"></span> A entrar...';
+
+  try {
+    await MDR.adminLogin(document.getElementById('email').value, document.getElementById('password').value);
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    console.error(err);
+    let message = 'Não foi possível entrar. Verifique as credenciais.';
+    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+      message = 'Email ou password incorrectos.';
+    } else if (err.code === 'auth/invalid-email') {
+      message = 'Email inválido.';
+    }
+    alertBox.innerHTML = `<div class="alert alert-error">${message}</div>`;
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+  }
+});
+</script>
+</body>
+</html>

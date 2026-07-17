@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MDR MozCommunity — Mecanismo de Diálogo e Reclamações</title>
+<meta name="description" content="Apresente preocupações, reclamações ou questões sobre projectos de desenvolvimento na sua comunidade e acompanhe a sua resolução.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">
+        <img src="img/logo-adin.jpg" alt="Logótipo ADIN">
+      </span>
+      <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <a href="submeter.html">Apresentar Preocupação</a>
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+      <a href="estatisticas.html">Estatísticas</a>
+      <a href="admin/login.html">Entrar</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">Aberto à comunidade</span>
+        <h1>A sua voz chega até nós.</h1>
+        <p class="lead">O Mecanismo de Diálogo e Reclamações (MDR) existe para ouvir perguntas, esclarecer
+          dúvidas e resolver problemas de pessoas afectadas pelas actividades dos nossos projectos —
+          de forma gratuita, confidencial e acessível.</p>
+        <div class="hero-actions">
+          <a href="submeter.html" class="btn btn-primary">Apresentar uma preocupação</a>
+          <a href="acompanhar.html" class="btn btn-secondary">Acompanhar um caso</a>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <h3>Linhas de emergência gratuitas</h3>
+        <div class="emergency-line"><span class="region">Norte</span><span class="number">800 900 200</span></div>
+        <div class="emergency-line"><span class="region">Centro</span><span class="number">800 900 300</span></div>
+        <div class="emergency-line"><span class="region">Sul</span><span class="number">800 900 400</span></div>
+        <div class="emergency-line"><span class="region">E-mail</span><span class="number" style="font-size:0.85rem">mdr@exemplo.org</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="thread-divider"><span class="knot" style="left:16%"></span><span class="knot" style="left:48%"></span><span class="knot" style="left:82%"></span></div></div>
+
+  <section>
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Como funciona</span>
+        <h2>Do relato à resolução, em quatro passos</h2>
+      </div>
+      <div class="step"><div class="step-num">01</div><div><h3>Apresente a sua preocupação</h3><p>Preencha o formulário online, indicando o projecto, a localização e o assunto — ou ligue gratuitamente para a linha da sua região.</p></div></div>
+      <div class="step"><div class="step-num">02</div><div><h3>Recebe um código de referência</h3><p>Cada caso recebe um código único e um PIN de acesso, para que possa acompanhar o processo com privacidade.</p></div></div>
+      <div class="step"><div class="step-num">03</div><div><h3>A equipa analisa o caso</h3><p>O caso é encaminhado à equipa responsável, que regista actualizações visíveis ao longo do processo.</p></div></div>
+      <div class="step"><div class="step-num">04</div><div><h3>Acompanha até à resolução</h3><p>Use o código e o PIN a qualquer momento para ver o estado actual e o histórico do seu caso.</p></div></div>
+    </div>
+  </section>
+
+  <section style="background:var(--paper-raised); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Projectos abrangidos</span>
+        <h2>Projectos que utilizam este mecanismo</h2>
+        <p>Este canal serve as comunidades afectadas pelos seguintes projectos.</p>
+      </div>
+      <div class="project-tags" id="project-tags"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container card-grid">
+      <div class="card">
+        <h3>Confidencial</h3>
+        <p>Pode optar por apresentar a sua preocupação de forma anónima. Os seus dados de contacto nunca são partilhados publicamente.</p>
+      </div>
+      <div class="card">
+        <h3>Sem custos</h3>
+        <p>As linhas telefónicas são gratuitas em todas as regiões. A submissão online não tem qualquer custo.</p>
+      </div>
+      <div class="card">
+        <h3>Aberto e transparente</h3>
+        <p>Consulte estatísticas públicas sobre o número e o tipo de casos recebidos, sem revelar identidades.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>MDR MozCommunity — Mecanismo de Diálogo e Reclamações da ADIN.</p>
+    <div class="footer-links">
+      <a href="submeter.html">Apresentar Preocupação</a>
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+      <a href="estatisticas.html">Estatísticas</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/store.js"></script>
+<script>
+document.getElementById('project-tags').innerHTML = MDR.getProjects().map(p => `<span>${p}</span>`).join('');
+</script>
+</body>
+</html>

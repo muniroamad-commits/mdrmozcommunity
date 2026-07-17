@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gestão de Utilizadores — MDR MozCommunity</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  table.users { width: 100%; border-collapse: collapse; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 24px; }
+  table.users th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); padding: 12px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-weight: 500; }
+  table.users td { padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 0.88rem; vertical-align: middle; }
+  table.users tr:last-child td { border-bottom: none; }
+  .role-tag { font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .role-admin { background: var(--teal-tint); color: var(--teal-dark); }
+  .role-provincial { background: var(--gold-tint); color: #8A5F13; }
+  .role-readonly { background: #ECECEC; color: #55606A; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
+      <span class="brand-name">MDR MozCommunity<small>Painel de Gestão — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <a href="dashboard.html">Casos</a>
+      <span class="small-note" id="admin-name-label" style="margin-right:8px;"></span>
+      <a href="#" id="logout-link">Sair</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="container" style="max-width:920px;">
+      <span class="eyebrow">Área reservada — só Administrador geral</span>
+      <h1 style="font-size:clamp(1.6rem,3vw,2.1rem)">Gestão de Utilizadores</h1>
+      <p class="lead" style="max-width:70ch">
+        Aqui defines o <strong>nível de acesso</strong> de cada pessoa. Antes de adicionar alguém aqui,
+        cria a conta de login em <strong>Firebase Console → Authentication → Users → Add user</strong>
+        e copia o <strong>User UID</strong> gerado — é isso que colas no formulário abaixo.
+      </p>
+
+      <div id="alert-box"></div>
+
+      <table class="users">
+        <thead><tr><th>Nome</th><th>Email</th><th>Nível de acesso</th><th>Província</th><th></th></tr></thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="5" class="skeleton" style="height:40px;"></td></tr>
+        </tbody>
+      </table>
+
+      <div class="form-card">
+        <h3 style="margin-bottom:14px;">Adicionar / editar utilizador</h3>
+        <div class="field">
+          <label for="uid">User UID <span class="required">*</span></label>
+          <input type="text" id="uid" placeholder="Copiado de Firebase Console → Authentication → Users" style="font-family:var(--font-mono);">
+          <div class="hint">Se já existir um utilizador com este UID na tabela acima, os dados dele serão actualizados.</div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="name">Nome</label>
+            <input type="text" id="name" placeholder="Nome da pessoa">
+          </div>
+          <div class="field">
+            <label for="email">Email (só para referência)</label>
+            <input type="email" id="email" placeholder="email@adin.gov.mz">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="role">Nível de acesso <span class="required">*</span></label>
+            <select id="role">
+              <option value="admin">Administrador geral — vê e edita tudo</option>
+              <option value="provincial">Gestor provincial — só a sua província</option>
+              <option value="readonly">Só leitura — não pode alterar casos</option>
+            </select>
+          </div>
+          <div class="field" id="province-field">
+            <label for="province">Província (só para "Gestor provincial")</label>
+            <select id="province">
+              <option value="">—</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="save-btn">Guardar utilizador</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/store.js"></script>
+<script>
+MDR.getProvinces().forEach(p => document.getElementById('province').add(new Option(p, p)));
+
+MDR.onAuthChange(admin => {
+  if (!admin) { window.location.href = 'login.html'; return; }
+  if (admin.noProfile) {
+    alert('A tua conta não tem permissões configuradas nesta plataforma.');
+    MDR.adminLogout().then(() => window.location.href = 'login.html');
+    return;
+  }
+  if (admin.role !== 'admin') {
+    alert('Só o Administrador geral pode aceder à Gestão de Utilizadores.');
+    window.location.href = 'dashboard.html';
+    return;
+  }
+  document.getElementById('admin-name-label').textContent = admin.name;
+  loadUsers();
+});
+
+document.getElementById('logout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  MDR.adminLogout().then(() => window.location.href = 'login.html');
+});
+
+const roleLabels = { admin: 'Administrador geral', provincial: 'Gestor provincial', readonly: 'Só leitura' };
+const alertBox = document.getElementById('alert-box');
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  try {
+    const users = await MDR.listAdminUsers();
+    if (!users.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="small-note" style="padding:20px;">Ainda não há utilizadores configurados.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${escapeHtml(u.name || '—')}</td>
+        <td class="small-note">${escapeHtml(u.email || '—')}</td>
+        <td><span class="role-tag role-${u.role}">${roleLabels[u.role] || u.role}</span></td>
+        <td>${escapeHtml(u.province || '—')}</td>
+        <td style="text-align:right;">
+          <button class="btn btn-secondary btn-sm" onclick="editUser('${u.uid}')">Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="removeUser('${u.uid}')">Remover acesso</button>
+        </td>
+      </tr>
+    `).join('');
+    window._usersCache = users;
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="5"><div class="alert alert-error">Não foi possível carregar os utilizadores.</div></td></tr>`;
+  }
+}
+
+function editUser(uid) {
+  const u = (window._usersCache || []).find(x => x.uid === uid);
+  if (!u) return;
+  document.getElementById('uid').value = u.uid;
+  document.getElementById('name').value = u.name || '';
+  document.getElementById('email').value = u.email || '';
+  document.getElementById('role').value = u.role;
+  document.getElementById('province').value = u.province || '';
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+async function removeUser(uid) {
+  if (!confirm('Remover o acesso desta pessoa à plataforma? A conta de login no Firebase não é apagada, só o nível de acesso — se quiseres eliminar a conta por completo, faz isso em Authentication → Users.')) return;
+  try {
+    await MDR.removeAdminUser(uid);
+    loadUsers();
+  } catch (err) {
+    console.error(err);
+    alertBox.innerHTML = `<div class="alert alert-error">Não foi possível remover o acesso.</div>`;
+  }
+}
+
+document.getElementById('save-btn').addEventListener('click', async () => {
+  alertBox.innerHTML = '';
+  const uid = document.getElementById('uid').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const role = document.getElementById('role').value;
+  const province = document.getElementById('province').value;
+
+  try {
+    await MDR.upsertAdminUser(uid, { name, email, role, province });
+    document.getElementById('uid').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('role').value = 'admin';
+    document.getElementById('province').value = '';
+    loadUsers();
+    alertBox.innerHTML = `<div class="alert alert-success">Utilizador guardado.</div>`;
+  } catch (err) {
+    console.error(err);
+    alertBox.innerHTML = `<div class="alert alert-error">${err.message || 'Não foi possível guardar.'}</div>`;
+  }
+});
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>

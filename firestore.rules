@@ -1,0 +1,119 @@
+rules_version = '2';
+
+// Regras de segurança do Firestore para a plataforma MDR.
+//
+// Como aplicar:
+// Firebase Console → Firestore Database → Regras → cole este conteúdo → Publicar
+//
+// Lógica:
+// - Qualquer pessoa pode CRIAR uma reclamação (submissão pública do formulário).
+// - Qualquer pessoa pode LER uma reclamação específica SE souber o código de
+//   referência exacto (usado como ID do documento) — mas não pode listar/
+//   pesquisar todas as reclamações. Isto é o equivalente ao código + PIN
+//   a funcionar como uma chave de acesso.
+// - Só utilizadores autenticados (equipa administrativa, criada em
+//   Authentication → Users) podem listar todos os casos.
+// - Actualizar (mudar estado/notas) depende do NÍVEL DE ACESSO, guardado na
+//   colecção "admins":
+//     • admin      → pode actualizar qualquer caso, de qualquer província
+//     • provincial → só pode actualizar casos da sua própria província
+//     • readonly   → não pode actualizar nenhum caso
+// - Ninguém pode apagar reclamações a partir do site.
+//
+// IMPORTANTE — arranque inicial (bootstrap):
+// Estas regras exigem que exista um documento em admins/{o_teu_uid} com
+// role="admin" para poderes gerir outros utilizadores a partir do site.
+// Esse PRIMEIRO documento tem de ser criado manualmente, uma única vez,
+// directamente no Firestore Console (Dados → iniciar colecção "admins" →
+// documento com ID = o teu User UID, ver Authentication → Users). Depois
+// disso, consegues gerir todos os outros utilizadores dentro do próprio
+// painel administrativo, em "Gestão de Utilizadores".
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function adminDoc() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdminGeral() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        adminDoc().role == 'admin';
+    }
+    function canEditComplaint(complaintProvince) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        (
+          adminDoc().role == 'admin' ||
+          (adminDoc().role == 'provincial' && adminDoc().province == complaintProvince)
+        );
+    }
+
+    match /complaints/{referenceCode} {
+
+      // Leitura de UM caso específico: pública (o PIN funciona como segredo
+      // adicional, verificado no lado do cliente após a leitura).
+      allow get: if true;
+
+      // Listar/pesquisar TODOS os casos: só para administradores autenticados
+      // (admin, provincial e readonly podem todos listar — a restrição por
+      // província para o nível "provincial" é aplicada na interface; a
+      // restrição que importa de verdade, a de ESCRITA, está protegida abaixo).
+      allow list: if isSignedIn();
+
+      // Criar um novo caso: público, mas obriga a estrutura mínima e a que
+      // o estado inicial seja sempre "recebida". O ID do documento (código
+      // de referência) impede que alguém sobrescreva um caso já existente,
+      // porque isso passaria a ser tratado como "update" (bloqueado abaixo).
+      allow create: if
+        request.resource.data.reference_code == referenceCode &&
+        request.resource.data.status == 'recebida' &&
+        request.resource.data.keys().hasAll([
+          'reference_code', 'access_pin', 'subject', 'community',
+          'status', 'created_at', 'updated_at', 'updates'
+        ]);
+
+      // Actualizar um caso: depende do nível de acesso (ver funções acima).
+      allow update: if canEditComplaint(resource.data.province);
+
+      // Ninguém apaga reclamações a partir do site.
+      allow delete: if false;
+    }
+
+    // Espelho público, sem dados pessoais (nome, contacto, assunto,
+    // descrição, anexos NÃO estão presentes aqui) — alimenta a página de
+    // Estatísticas sem expor informação privada de ninguém.
+    match /complaints_public/{referenceCode} {
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if
+        request.resource.data.reference_code == referenceCode &&
+        request.resource.data.status == 'recebida' &&
+        request.resource.data.keys().hasOnly([
+          'reference_code', 'status', 'province', 'project', 'created_at', 'updated_at'
+        ]);
+
+      allow update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    // Perfis administrativos: nome, papel (role) e província de cada
+    // utilizador. Cada pessoa cria a sua conta em Authentication → Users;
+    // este documento é o que define o que ela pode fazer dentro do site.
+    match /admins/{adminId} {
+      // Qualquer administrador autenticado pode ler o SEU PRÓPRIO perfil,
+      // para o site saber que nível de acesso aplicar.
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+
+      // Listar todos os perfis (ecrã "Gestão de Utilizadores"): só admin geral.
+      allow list: if isAdminGeral();
+
+      // Criar/editar/apagar perfis de outros utilizadores: só admin geral.
+      allow create, update, delete: if isAdminGeral();
+    }
+  }
+}

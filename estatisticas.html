@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estatísticas — MDR MozCommunity</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="brand">
+      <span class="brand-mark"><img src="img/logo-adin.jpg" alt="Logótipo ADIN"></span>
+      <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <a href="submeter.html">Apresentar Preocupação</a>
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+      <a href="estatisticas.html" class="is-active">Estatísticas</a>
+      <a href="admin/login.html">Entrar</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section style="padding-bottom:0;">
+    <div class="container">
+      <span class="eyebrow">Dados abertos</span>
+      <h1 style="font-size:clamp(1.8rem,3vw,2.4rem)">Estatísticas Públicas</h1>
+      <p class="lead" style="max-width:60ch">Números agregados sobre as preocupações recebidas através deste mecanismo. Nenhum dado pessoal é apresentado.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:24px;">
+    <div class="container">
+      <div class="stat-grid" id="stat-tiles">
+        <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Total de casos</div></div>
+        <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Casos resolvidos</div></div>
+        <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Taxa de resolução</div></div>
+        <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Tempo médio de resolução</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0;">
+    <div class="container" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div class="chart-card">
+        <h3>Casos por estado</h3>
+        <div class="chart-sub">Distribuição actual de todos os casos registados</div>
+        <canvas id="chart-status" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Casos por província</h3>
+        <div class="chart-sub">Cabo Delgado, Nampula e Niassa</div>
+        <canvas id="chart-province" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Casos por componente do projecto</h3>
+        <div class="chart-sub">Distribuição entre as componentes do programa</div>
+        <canvas id="chart-project" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Evolução mensal</h3>
+        <div class="chart-sub">Número de casos recebidos por mês</div>
+        <canvas id="chart-month" height="220"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>MDR MozCommunity — Mecanismo de Diálogo e Reclamações da ADIN.</p>
+    <div class="footer-links">
+      <a href="submeter.html">Apresentar Preocupação</a>
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/store.js"></script>
+<script>
+const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921', '#E8B98A', '#B08A80'];
+
+(async () => {
+  try {
+    const data = await MDR.getPublicStats();
+
+    document.getElementById('stat-tiles').innerHTML = `
+      <div class="stat-tile"><div class="n">${data.total}</div><div class="label">Total de casos</div></div>
+      <div class="stat-tile"><div class="n">${data.resolved_count}</div><div class="label">Casos resolvidos</div></div>
+      <div class="stat-tile"><div class="n">${data.resolution_rate}%</div><div class="label">Taxa de resolução</div></div>
+      <div class="stat-tile"><div class="n">${data.avg_resolution_days ?? '—'}</div><div class="label">Dias, em média, até à resolução</div></div>
+    `;
+
+    new Chart(document.getElementById('chart-status'), {
+      type: 'doughnut',
+      data: {
+        labels: data.by_status.map(s => MDR.STATUS_LABELS[s.status] || s.status),
+        datasets: [{ data: data.by_status.map(s => s.n), backgroundColor: PALETTE, borderWidth: 0 }]
+      },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Public Sans' } } } } }
+    });
+
+    new Chart(document.getElementById('chart-province'), {
+      type: 'bar',
+      data: {
+        labels: data.by_province.map(p => p.province),
+        datasets: [{ data: data.by_province.map(p => p.n), backgroundColor: '#9D212B', borderRadius: 4 }]
+      },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { precision: 0 } } } }
+    });
+
+    new Chart(document.getElementById('chart-project'), {
+      type: 'bar',
+      data: {
+        labels: data.by_project.map(p => p.project),
+        datasets: [{ data: data.by_project.map(p => p.n), backgroundColor: '#FAA842', borderRadius: 4 }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+    });
+
+    new Chart(document.getElementById('chart-month'), {
+      type: 'line',
+      data: {
+        labels: data.by_month.map(m => m.month),
+        datasets: [{ data: data.by_month.map(m => m.n), borderColor: '#9D212B', backgroundColor: 'rgba(157,33,43,0.12)', fill: true, tension: 0.3 }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('stat-tiles').innerHTML = '<div class="alert alert-error">Não foi possível carregar as estatísticas.</div>';
+  }
+})();
+</script>
+</body>
+</html>

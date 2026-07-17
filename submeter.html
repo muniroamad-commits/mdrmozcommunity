@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apresentar Preocupação — MDR MozCommunity</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="brand">
+      <span class="brand-mark"><img src="img/logo-adin.jpg" alt="Logótipo ADIN"></span>
+      <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
+    </a>
+    <nav class="main-nav">
+      <a href="submeter.html" class="is-active">Apresentar Preocupação</a>
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+      <a href="estatisticas.html">Estatísticas</a>
+      <a href="admin/login.html">Entrar</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section style="padding-bottom:0;">
+    <div class="container">
+      <span class="eyebrow">Passo único</span>
+      <h1 style="font-size:clamp(1.8rem,3vw,2.4rem)">Apresentar Preocupação</h1>
+      <p class="lead" style="max-width:60ch">Os campos marcados com <span class="required">*</span> são de preenchimento obrigatório. Pode optar por não se identificar.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:24px;">
+    <div class="container" style="max-width:760px;">
+
+      <div id="alert-box"></div>
+
+      <form id="complaint-form" class="form-card">
+
+        <div class="form-section">
+          <div class="form-section-title">Projecto</div>
+          <div class="field">
+            <label for="project">Projecto relacionado</label>
+            <select id="project" name="project">
+              <option value="">Seleccione o projecto (se aplicável)...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="occurrence_date">Data da ocorrência</label>
+            <input type="date" id="occurrence_date" name="occurrence_date">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Localização</div>
+          <div class="form-row">
+            <div class="field">
+              <label for="province">Província <span class="required">*</span></label>
+              <select id="province" name="province" required>
+                <option value="">Seleccione a província...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="district">Distrito <span class="required">*</span></label>
+              <select id="district" name="district" required disabled>
+                <option value="">Seleccione primeiro a província...</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="posto_administrativo">Posto Administrativo</label>
+              <select id="posto_administrativo" name="posto_administrativo" disabled>
+                <option value="">Seleccione primeiro o distrito...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="community">Comunidade / Bairro <span class="required">*</span></label>
+              <input type="text" id="community" name="community" required placeholder="Ex: Bairro Central">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Contacto</div>
+          <div class="checkbox-row" style="margin-bottom:16px;">
+            <input type="checkbox" id="is_anonymous" name="is_anonymous">
+            <label for="is_anonymous">Prefiro apresentar esta preocupação de forma anónima</label>
+          </div>
+          <div id="contact-fields">
+            <div class="form-row">
+              <div class="field">
+                <label for="contact_name">Nome</label>
+                <input type="text" id="contact_name" name="contact_name" placeholder="Opcional">
+              </div>
+              <div class="field">
+                <label for="contact_phone">Telefone</label>
+                <input type="tel" id="contact_phone" name="contact_phone" placeholder="84xxxxxxx">
+              </div>
+            </div>
+            <div class="field">
+              <label for="contact_email">Email</label>
+              <input type="email" id="contact_email" name="contact_email" placeholder="Opcional">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Preocupação</div>
+          <div class="field">
+            <label for="subject">Assunto <span class="required">*</span></label>
+            <input type="text" id="subject" name="subject" required placeholder="Resuma o assunto em poucas palavras">
+          </div>
+          <div class="field">
+            <label for="description">Descrição</label>
+            <textarea id="description" name="description" placeholder="Descreva com mais detalhe o que aconteceu, onde e quando"></textarea>
+          </div>
+          <div class="field">
+            <label>Adicionar documentos ou fotos</label>
+            <div class="file-drop" id="file-drop">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9D212B" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              <div>Clique para seleccionar ficheiros <span class="hint" style="display:block">JPG ou PNG — até 250KB cada, máx. 2 ficheiros (limite da base de dados gratuita)</span></div>
+              <input type="file" id="attachments" name="attachments" multiple accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+            </div>
+            <div class="file-list" id="file-list"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Submeter</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>MDR MozCommunity — Mecanismo de Diálogo e Reclamações da ADIN.</p>
+    <div class="footer-links">
+      <a href="acompanhar.html">Acompanhar Preocupação</a>
+      <a href="estatisticas.html">Estatísticas</a>
+    </div>
+  </div>
+</footer>
+
+<div id="success-modal" style="display:none; position:fixed; inset:0; background:rgba(24,36,48,0.55); z-index:100; align-items:center; justify-content:center; padding:20px;">
+  <div class="form-card" style="max-width:440px; width:100%;">
+    <div class="result-panel">
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9D212B" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>
+      <h2 style="margin-top:14px;">Preocupação registada</h2>
+      <p>Guarde estes dados — vai precisar deles para acompanhar o seu caso.</p>
+      <div class="small-note">Código de referência</div>
+      <div class="result-code" id="result-code">MDR-0000-000000</div>
+      <div class="small-note">PIN de acesso</div>
+      <div class="result-pin" id="result-pin">0000</div>
+      <p class="small-note" style="margin-top:18px;" id="skipped-note"></p>
+      <a href="acompanhar.html" class="btn btn-primary btn-block" style="margin-top:10px;">Ir para Acompanhar Preocupação</a>
+      <a href="index.html" class="btn btn-ghost btn-block">Voltar ao início</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/store.js"></script>
+<script>
+const projectSelect = document.getElementById('project');
+const provinceSelect = document.getElementById('province');
+const districtSelect = document.getElementById('district');
+const postoSelect = document.getElementById('posto_administrativo');
+const anonCheckbox = document.getElementById('is_anonymous');
+const contactFields = document.getElementById('contact-fields');
+const fileDrop = document.getElementById('file-drop');
+const fileInput = document.getElementById('attachments');
+const fileList = document.getElementById('file-list');
+const alertBox = document.getElementById('alert-box');
+const form = document.getElementById('complaint-form');
+const submitBtn = document.getElementById('submit-btn');
+
+MDR.getProjects().forEach(p => projectSelect.add(new Option(p, p)));
+MDR.getProvinces().forEach(p => provinceSelect.add(new Option(p, p)));
+
+provinceSelect.addEventListener('change', () => {
+  districtSelect.innerHTML = '<option value="">Seleccione o distrito...</option>';
+  postoSelect.innerHTML = '<option value="">Seleccione primeiro o distrito...</option>';
+  postoSelect.disabled = true;
+  if (!provinceSelect.value) {
+    districtSelect.innerHTML = '<option value="">Seleccione primeiro a província...</option>';
+    districtSelect.disabled = true;
+    return;
+  }
+  MDR.getDistricts(provinceSelect.value).forEach(d => districtSelect.add(new Option(d, d)));
+  districtSelect.disabled = false;
+});
+
+districtSelect.addEventListener('change', () => {
+  postoSelect.innerHTML = '<option value="">Seleccione o posto (opcional)...</option>';
+  if (!districtSelect.value) {
+    postoSelect.innerHTML = '<option value="">Seleccione primeiro o distrito...</option>';
+    postoSelect.disabled = true;
+    return;
+  }
+  MDR.getPostos(provinceSelect.value, districtSelect.value).forEach(pa => postoSelect.add(new Option(pa, pa)));
+  postoSelect.disabled = false;
+});
+
+anonCheckbox.addEventListener('change', () => {
+  contactFields.style.display = anonCheckbox.checked ? 'none' : 'block';
+});
+
+fileDrop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  fileList.innerHTML = Array.from(fileInput.files).map(f =>
+    `<div><span>${f.name}</span><span>${(f.size/1024).toFixed(0)} KB</span></div>`
+  ).join('');
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  alertBox.innerHTML = '';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner"></span> A submeter...';
+
+  const payload = {
+    project: projectSelect.value,
+    occurrence_date: document.getElementById('occurrence_date').value,
+    province: provinceSelect.value,
+    district: districtSelect.value,
+    posto_administrativo: document.getElementById('posto_administrativo').value,
+    community: document.getElementById('community').value,
+    is_anonymous: anonCheckbox.checked,
+    contact_name: document.getElementById('contact_name').value,
+    contact_phone: document.getElementById('contact_phone').value,
+    contact_email: document.getElementById('contact_email').value,
+    subject: document.getElementById('subject').value,
+    description: document.getElementById('description').value,
+  };
+
+  if (!payload.community || !payload.subject || !payload.province || !payload.district) {
+    alertBox.innerHTML = '<div class="alert alert-error">Preencha os campos obrigatórios: Província, Distrito, Comunidade e Assunto.</div>';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submeter';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  try {
+    const result = await MDR.submitComplaint(payload, fileInput.files);
+    document.getElementById('result-code').textContent = result.reference_code;
+    document.getElementById('result-pin').textContent = result.access_pin;
+    document.getElementById('skipped-note').textContent = result.skipped && result.skipped.length
+      ? `Nota: ${result.skipped.join(', ')} não foi anexado por exceder o limite de tamanho.`
+      : '';
+    document.getElementById('success-modal').style.display = 'flex';
+    form.reset();
+    districtSelect.innerHTML = '<option value="">Seleccione primeiro a província...</option>';
+    postoSelect.innerHTML = '<option value="">Seleccione primeiro o distrito...</option>';
+    postoSelect.disabled = true;
+    fileList.innerHTML = '';
+  } catch (err) {
+    console.error(err);
+    alertBox.innerHTML = `<div class="alert alert-error">Não foi possível submeter. ${err.message || 'Verifique a sua ligação à internet e tente novamente.'}</div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submeter';
+  }
+});
+</script>
+</body>
+</html>
