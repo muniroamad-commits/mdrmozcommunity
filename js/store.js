@@ -114,6 +114,7 @@ const MDR = (() => {
   // seguimento (em_resolucao → resolvida) → só o administrador encerra.
   const STATUS_LABELS = {
     recebida: 'Recebida',
+    em_analise: 'Em análise (registo antigo)',
     registada: 'Registada',
     procedente: 'Aprovada (Procedente)',
     nao_procedente: 'Não Procedente',
