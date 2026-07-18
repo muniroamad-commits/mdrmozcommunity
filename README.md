@@ -345,3 +345,18 @@ não pode ser contornado.
 Ambas as acções pedem confirmação explícita, escrevendo uma palavra exacta
 ("APAGAR" ou "APAGAR TUDO") — não há forma de apagar por engano com um
 único clique, e a eliminação é permanente e não pode ser desfeita.
+
+## Relatório com filtros e exportação em PDF
+
+A antiga página de "Estatísticas" passou a chamar-se **Relatório**. Além
+dos números e gráficos que já existiam, agora é possível:
+
+- Filtrar por **Componente**, **Tipo de caso**, **Província** e **Período**
+  (data de início e fim).
+- Descarregar o relatório em **PDF**, já com os filtros aplicados — inclui
+  o resumo em números e todos os gráficos, exactamente como aparecem no
+  ecrã nesse momento.
+
+Nota técnica: casos VBG/PSEA nunca aparecem neste relatório nem no PDF,
+porque vivem numa colecção separada e confidencial (ver secção "Fila
+confidencial de VBG/PSEA").

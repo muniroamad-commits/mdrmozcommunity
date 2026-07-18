@@ -116,7 +116,7 @@ service cloud.firestore {
         request.resource.data.reference_code == referenceCode &&
         request.resource.data.status == 'recebida' &&
         request.resource.data.keys().hasOnly([
-          'reference_code', 'status', 'province', 'project', 'created_at', 'updated_at'
+          'reference_code', 'status', 'province', 'project', 'concern_type', 'created_at', 'updated_at'
         ]);
 
       allow update: if isSignedIn();

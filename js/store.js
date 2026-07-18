@@ -266,6 +266,7 @@ const MDR = (() => {
         status: record.status,
         province: record.province,
         project: record.project,
+        concern_type: record.concern_type,
         created_at: record.created_at,
         updated_at: record.updated_at,
       });
@@ -493,9 +494,15 @@ const MDR = (() => {
   // ---------- Estatísticas públicas ----------
   // Lê exclusivamente a colecção "complaints_public" (sem dados pessoais),
   // que é de leitura pública segundo as regras do Firestore fornecidas.
-  async function getPublicStats() {
+  async function getPublicStats(filters = {}) {
     const snap = await db.collection(COMPLAINTS_PUBLIC).get();
-    const complaints = snap.docs.map(d => d.data());
+    let complaints = snap.docs.map(d => d.data());
+
+    if (filters.province) complaints = complaints.filter(c => c.province === filters.province);
+    if (filters.project) complaints = complaints.filter(c => c.project === filters.project);
+    if (filters.concern_type) complaints = complaints.filter(c => c.concern_type === filters.concern_type);
+    if (filters.dateFrom) complaints = complaints.filter(c => (c.created_at || '') >= filters.dateFrom);
+    if (filters.dateTo) complaints = complaints.filter(c => (c.created_at || '') <= filters.dateTo + 'T23:59:59');
 
     const total = complaints.length;
     const resolvedCount = complaints.filter(c => c.status === 'resolvida' || c.status === 'encerrada').length;
@@ -509,6 +516,9 @@ const MDR = (() => {
 
     const byProject = {};
     complaints.forEach(c => { if (c.project) byProject[c.project] = (byProject[c.project] || 0) + 1; });
+
+    const byConcernType = {};
+    complaints.forEach(c => { if (c.concern_type) byConcernType[c.concern_type] = (byConcernType[c.concern_type] || 0) + 1; });
 
     const byMonth = {};
     complaints.forEach(c => {
@@ -531,6 +541,7 @@ const MDR = (() => {
       by_status: byStatus,
       by_province: Object.entries(byProvince).map(([province, n]) => ({ province, n })).sort((a, b) => b.n - a.n),
       by_project: Object.entries(byProject).map(([project, n]) => ({ project, n })).sort((a, b) => b.n - a.n),
+      by_concern_type: Object.entries(byConcernType).map(([concern_type, n]) => ({ concern_type, n })).sort((a, b) => b.n - a.n),
       by_month: Object.entries(byMonth).map(([month, n]) => ({ month, n })).sort((a, b) => a.month.localeCompare(b.month)),
     };
   }

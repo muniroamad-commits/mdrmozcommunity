@@ -3,10 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Estatísticas — MDR MozCommunity</title>
+<title>Relatório — MDR MozCommunity</title>
 <link rel="icon" href="img/logo-adin.jpg" type="image/jpeg">
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  .filters-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+  .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .filters-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+</style>
 </head>
 <body>
 
@@ -22,7 +28,7 @@
     <nav class="main-nav">
       <a href="submeter.html">Registar Caso</a>
       <a href="acompanhar.html">Acompanhar Preocupação</a>
-      <a href="estatisticas.html" class="is-active">Estatísticas</a>
+      <a href="estatisticas.html" class="is-active">Relatório</a>
       <a href="admin/login.html">Entrar</a>
     </nav>
   </div>
@@ -32,13 +38,45 @@
   <section style="padding-bottom:0;">
     <div class="container">
       <span class="eyebrow">Dados abertos</span>
-      <h1 style="font-size:clamp(1.8rem,3vw,2.4rem)">Estatísticas Públicas</h1>
+      <h1 style="font-size:clamp(1.8rem,3vw,2.4rem)">Relatório</h1>
       <p class="lead" style="max-width:60ch">Números agregados sobre as preocupações recebidas através deste mecanismo. Nenhum dado pessoal é apresentado.</p>
     </div>
   </section>
 
   <section style="padding-top:24px;">
     <div class="container">
+
+      <div class="filters-card">
+        <h3 style="font-size:0.95rem; margin-bottom:14px;">Filtros do relatório</h3>
+        <div class="filters-grid">
+          <div class="field" style="margin:0;">
+            <label for="f-province">Província</label>
+            <select id="f-province"><option value="">Todas</option></select>
+          </div>
+          <div class="field" style="margin:0;">
+            <label for="f-project">Componente</label>
+            <select id="f-project"><option value="">Todas</option></select>
+          </div>
+          <div class="field" style="margin:0;">
+            <label for="f-concern">Tipo de caso</label>
+            <select id="f-concern"><option value="">Todos</option></select>
+          </div>
+          <div class="field" style="margin:0;">
+            <label for="f-from">Período — de</label>
+            <input type="date" id="f-from">
+          </div>
+          <div class="field" style="margin:0;">
+            <label for="f-to">Período — até</label>
+            <input type="date" id="f-to">
+          </div>
+        </div>
+        <div class="filters-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="apply-filters-btn">Aplicar filtros</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="clear-filters-btn">Limpar filtros</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="download-pdf-btn" style="margin-left:auto; border-color:var(--teal); color:var(--teal-dark);">⬇ Descarregar relatório em PDF</button>
+        </div>
+      </div>
+
       <div class="stat-grid" id="stat-tiles">
         <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Total de casos</div></div>
         <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Casos resolvidos</div></div>
@@ -52,7 +90,7 @@
     <div class="container" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
       <div class="chart-card">
         <h3>Casos por estado</h3>
-        <div class="chart-sub">Distribuição actual de todos os casos registados</div>
+        <div class="chart-sub">Distribuição dos casos, de acordo com os filtros seleccionados</div>
         <canvas id="chart-status" height="220"></canvas>
       </div>
       <div class="chart-card">
@@ -61,14 +99,19 @@
         <canvas id="chart-province" height="220"></canvas>
       </div>
       <div class="chart-card">
-        <h3>Casos por componente do projecto</h3>
+        <h3>Casos por componente</h3>
         <div class="chart-sub">Distribuição entre as componentes do programa</div>
         <canvas id="chart-project" height="220"></canvas>
       </div>
       <div class="chart-card">
+        <h3>Casos por tipo</h3>
+        <div class="chart-sub">Sugestão, pedido de informação, elogio, reclamação, VBG/PSEA</div>
+        <canvas id="chart-concern" height="220"></canvas>
+      </div>
+      <div class="chart-card" style="grid-column:1 / -1;">
         <h3>Evolução mensal</h3>
         <div class="chart-sub">Número de casos recebidos por mês</div>
-        <canvas id="chart-month" height="220"></canvas>
+        <canvas id="chart-month" height="180"></canvas>
       </div>
     </div>
   </section>
@@ -91,10 +134,42 @@
 <script src="js/store.js"></script>
 <script>
 const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921', '#E8B98A', '#B08A80'];
+let charts = {};
+let latestData = null;
 
-(async () => {
+const provinceSelect = document.getElementById('f-province');
+const projectSelect = document.getElementById('f-project');
+const concernSelect = document.getElementById('f-concern');
+MDR.getProvinces().forEach(p => provinceSelect.add(new Option(p, p)));
+MDR.getProjects().forEach(p => projectSelect.add(new Option(p, p)));
+Object.entries(MDR.getConcernTypes()).forEach(([value, label]) => concernSelect.add(new Option(label, value)));
+
+function currentFilters() {
+  return {
+    province: provinceSelect.value,
+    project: projectSelect.value,
+    concern_type: concernSelect.value,
+    dateFrom: document.getElementById('f-from').value,
+    dateTo: document.getElementById('f-to').value,
+  };
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => c && c.destroy());
+  charts = {};
+}
+
+async function loadReport() {
+  document.getElementById('stat-tiles').innerHTML = `
+    <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Total de casos</div></div>
+    <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Casos resolvidos</div></div>
+    <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Taxa de resolução</div></div>
+    <div class="stat-tile"><div class="n skeleton" style="height:2.1rem;width:60px;"></div><div class="label">Tempo médio de resolução</div></div>
+  `;
+
   try {
-    const data = await MDR.getPublicStats();
+    const data = await MDR.getPublicStats(currentFilters());
+    latestData = data;
 
     document.getElementById('stat-tiles').innerHTML = `
       <div class="stat-tile"><div class="n">${data.total}</div><div class="label">Total de casos</div></div>
@@ -103,7 +178,9 @@ const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921
       <div class="stat-tile"><div class="n">${data.avg_resolution_days ?? '—'}</div><div class="label">Dias, em média, até à resolução</div></div>
     `;
 
-    new Chart(document.getElementById('chart-status'), {
+    destroyCharts();
+
+    charts.status = new Chart(document.getElementById('chart-status'), {
       type: 'doughnut',
       data: {
         labels: data.by_status.map(s => MDR.STATUS_LABELS[s.status] || s.status),
@@ -112,7 +189,7 @@ const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921
       options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Public Sans' } } } } }
     });
 
-    new Chart(document.getElementById('chart-province'), {
+    charts.province = new Chart(document.getElementById('chart-province'), {
       type: 'bar',
       data: {
         labels: data.by_province.map(p => p.province),
@@ -121,7 +198,7 @@ const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921
       options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { precision: 0 } } } }
     });
 
-    new Chart(document.getElementById('chart-project'), {
+    charts.project = new Chart(document.getElementById('chart-project'), {
       type: 'bar',
       data: {
         labels: data.by_project.map(p => p.project),
@@ -130,7 +207,16 @@ const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921
       options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
     });
 
-    new Chart(document.getElementById('chart-month'), {
+    charts.concern = new Chart(document.getElementById('chart-concern'), {
+      type: 'bar',
+      data: {
+        labels: data.by_concern_type.map(p => MDR.getConcernTypes()[p.concern_type] || p.concern_type),
+        datasets: [{ data: data.by_concern_type.map(p => p.n), backgroundColor: '#5A4344', borderRadius: 4 }]
+      },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { precision: 0 } } } }
+    });
+
+    charts.month = new Chart(document.getElementById('chart-month'), {
       type: 'line',
       data: {
         labels: data.by_month.map(m => m.month),
@@ -140,9 +226,115 @@ const PALETTE = ['#9D212B', '#FAA842', '#5A4344', '#D9773A', '#C8555F', '#7A1921
     });
   } catch (err) {
     console.error(err);
-    document.getElementById('stat-tiles').innerHTML = '<div class="alert alert-error">Não foi possível carregar as estatísticas.</div>';
+    document.getElementById('stat-tiles').innerHTML = '<div class="alert alert-error">Não foi possível carregar o relatório.</div>';
   }
-})();
+}
+
+document.getElementById('apply-filters-btn').addEventListener('click', loadReport);
+document.getElementById('clear-filters-btn').addEventListener('click', () => {
+  provinceSelect.value = '';
+  projectSelect.value = '';
+  concernSelect.value = '';
+  document.getElementById('f-from').value = '';
+  document.getElementById('f-to').value = '';
+  loadReport();
+});
+
+document.getElementById('download-pdf-btn').addEventListener('click', async () => {
+  if (!latestData) { alert('Aguarda o relatório carregar antes de descarregar.'); return; }
+  const btn = document.getElementById('download-pdf-btn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'A preparar PDF...';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    let y = 50;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Relatório — MDR MozCommunity', margin, y);
+    y += 20;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(90, 67, 68);
+    doc.text(`Gerado em ${new Date().toLocaleString('pt-MZ')}`, margin, y);
+    y += 22;
+
+    const f = currentFilters();
+    const filterLines = [
+      `Província: ${f.province || 'Todas'}`,
+      `Componente: ${f.project || 'Todas'}`,
+      `Tipo de caso: ${f.concern_type ? (MDR.getConcernTypes()[f.concern_type] || f.concern_type) : 'Todos'}`,
+      `Período: ${f.dateFrom || 'início'} até ${f.dateTo || 'hoje'}`,
+    ];
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    filterLines.forEach(line => { doc.text(line, margin, y); y += 14; });
+    y += 10;
+
+    doc.setDrawColor(221, 214, 210);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 24;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('Resumo', margin, y);
+    y += 18;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    const summaryLines = [
+      `Total de casos: ${latestData.total}`,
+      `Casos resolvidos: ${latestData.resolved_count}`,
+      `Taxa de resolução: ${latestData.resolution_rate}%`,
+      `Tempo médio até à resolução: ${latestData.avg_resolution_days ?? '—'} dias`,
+    ];
+    summaryLines.forEach(line => { doc.text(line, margin, y); y += 16; });
+    y += 14;
+
+    // Gráficos — cada canvas do Chart.js já é uma imagem que podemos
+    // embutir directamente no PDF, sem precisar de nenhuma ferramenta extra.
+    const chartOrder = [
+      ['chart-status', 'Casos por estado'],
+      ['chart-province', 'Casos por província'],
+      ['chart-project', 'Casos por componente'],
+      ['chart-concern', 'Casos por tipo'],
+      ['chart-month', 'Evolução mensal'],
+    ];
+    const imgWidth = pageWidth - margin * 2;
+
+    for (const [canvasId, label] of chartOrder) {
+      const canvas = document.getElementById(canvasId);
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgHeight = (canvas.height / canvas.width) * imgWidth;
+
+      if (y + 24 + imgHeight > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage();
+        y = 50;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(label, margin, y);
+      y += 10;
+      doc.addImage(imgData, 'PNG', margin, y, imgWidth, imgHeight);
+      y += imgHeight + 26;
+    }
+
+    doc.save(`relatorio-mdr-mozcommunity-${new Date().toISOString().slice(0, 10)}.pdf`);
+  } catch (err) {
+    console.error(err);
+    alert('Não foi possível gerar o PDF.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+});
+
+loadReport();
 </script>
 <script>
 document.getElementById('nav-toggle')?.addEventListener('click', () => {
