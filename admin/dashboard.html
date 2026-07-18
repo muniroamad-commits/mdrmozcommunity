@@ -380,6 +380,16 @@ function renderWorkflowPanel(c, isAdminGeral) {
     ? available.map(s => `<button type="button" class="btn btn-primary btn-sm workflow-btn" data-to="${s.to}">${s.label}</button>`).join(' ')
     : (waitingMessages[c.status] ? `<p class="small-note">${waitingMessages[c.status]}</p>` : '');
 
+  // Um caso encerrado é o fim da linha — não há mais nada para preencher.
+  if (c.status === 'encerrada') {
+    return `
+      <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
+      <div class="form-card" style="padding:18px;">
+        <p class="small-note" style="margin:0;">Este caso está encerrado. Não há mais acções disponíveis.</p>
+      </div>
+    `;
+  }
+
   return `
     <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
     <div id="update-alert"></div>

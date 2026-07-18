@@ -310,28 +310,12 @@ function renderDrawer(c) {
     ? available.map(s => `<button type="button" class="btn btn-primary btn-sm vbg-workflow-btn" data-to="${s.to}">${s.label}</button>`).join(' ')
     : (waitingMessages[c.status] || '<span class="small-note">Sem acções disponíveis.</span>');
 
-  document.getElementById('drawer-content').innerHTML = `
-    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
-    <div class="small-note" style="font-family:var(--font-mono)">${c.reference_code}</div>
-    <h2 style="font-size:1.4rem; margin:4px 0 10px;">${escapeHtml(c.subject)}</h2>
-    <span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span>
-
-    <dl class="kv">
-      <dt>Localização</dt><dd>${escapeHtml(meta || '—')}</dd>
-      <dt>Comunidade</dt><dd>${escapeHtml(c.community)}</dd>
-      <dt>Ocorrência</dt><dd>${c.occurrence_date || '—'}</dd>
-      <dt>Contacto</dt><dd>${c.is_anonymous ? 'Anónimo' : [c.contact_name, c.contact_phone, c.contact_email].filter(Boolean).map(escapeHtml).join(' · ') || '—'}</dd>
-      <dt>Prioridade</dt><dd style="text-transform:capitalize;">${c.priority}</dd>
-    </dl>
-
-    ${c.description ? `<p>${escapeHtml(c.description)}</p>` : ''}
-
-    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Anexos</h4>
-    ${attachmentsHtml}
-
-    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Histórico</h4>
-    <ul class="thread-timeline">${updatesHtml}</ul>
-
+  const nextStepsHtml = c.status === 'encerrada' ? `
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
+    <div class="form-card" style="padding:18px;">
+      <p class="small-note" style="margin:0;">Este caso está encerrado. Não há mais acções disponíveis.</p>
+    </div>
+  ` : `
     <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
     <div id="update-alert"></div>
     <div class="form-card" style="padding:18px;">
@@ -363,6 +347,31 @@ function renderDrawer(c) {
       </div>
       <button type="button" class="btn btn-secondary btn-block" id="save-note-btn">Guardar nota / prioridade (sem mudar estado)</button>
     </div>
+  `;
+
+  document.getElementById('drawer-content').innerHTML = `
+    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    <div class="small-note" style="font-family:var(--font-mono)">${c.reference_code}</div>
+    <h2 style="font-size:1.4rem; margin:4px 0 10px;">${escapeHtml(c.subject)}</h2>
+    <span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span>
+
+    <dl class="kv">
+      <dt>Localização</dt><dd>${escapeHtml(meta || '—')}</dd>
+      <dt>Comunidade</dt><dd>${escapeHtml(c.community)}</dd>
+      <dt>Ocorrência</dt><dd>${c.occurrence_date || '—'}</dd>
+      <dt>Contacto</dt><dd>${c.is_anonymous ? 'Anónimo' : [c.contact_name, c.contact_phone, c.contact_email].filter(Boolean).map(escapeHtml).join(' · ') || '—'}</dd>
+      <dt>Prioridade</dt><dd style="text-transform:capitalize;">${c.priority}</dd>
+    </dl>
+
+    ${c.description ? `<p>${escapeHtml(c.description)}</p>` : ''}
+
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Anexos</h4>
+    ${attachmentsHtml}
+
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Histórico</h4>
+    <ul class="thread-timeline">${updatesHtml}</ul>
+
+    ${nextStepsHtml}
 
     ${currentAdmin && currentAdmin.role === 'admin' ? `
       <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--brick); margin:24px 0 8px;">Zona de risco</h4>
@@ -387,6 +396,8 @@ function renderDrawer(c) {
       }
     });
   }
+
+  if (c.status === 'encerrada') return;
 
   const alertEl = document.getElementById('update-alert');
 
@@ -420,13 +431,16 @@ function renderDrawer(c) {
     }, btn));
   });
 
-  document.getElementById('save-note-btn').addEventListener('click', function () {
-    runUpdate({
-      priority: document.getElementById('upd-priority').value,
-      note: document.getElementById('upd-note').value || null,
-      visible_to_public: document.getElementById('upd-visible').checked,
-    }, this);
-  });
+  const saveNoteBtn = document.getElementById('save-note-btn');
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', function () {
+      runUpdate({
+        priority: document.getElementById('upd-priority').value,
+        note: document.getElementById('upd-note').value || null,
+        visible_to_public: document.getElementById('upd-visible').checked,
+      }, this);
+    });
+  }
 }
 
 function formatDate(iso) {
