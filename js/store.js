@@ -118,14 +118,14 @@ const MDR = (() => {
   // aprova como procedente ou não procedente → a equipa provincial dá
   // seguimento (em_resolucao → resolvida) → só o administrador encerra.
   const STATUS_LABELS = {
-    recebida: 'Recebido',
+    recebida: 'Recebidos',
     em_analise: 'Em análise (registo antigo)',
-    registada: 'Registado',
-    procedente: 'Aprovado (Procedente)',
-    nao_procedente: 'Não Procedente',
+    registada: 'Registados',
+    procedente: 'Aprovados (Procedentes)',
+    nao_procedente: 'Não Procedentes',
     em_resolucao: 'Em resolução',
-    resolvida: 'Resolvido — aguarda encerramento',
-    encerrada: 'Encerrado',
+    resolvida: 'Resolvidos — aguarda encerramento',
+    encerrada: 'Encerrados',
   };
   const STATUS_ORDER = ['recebida', 'registada', 'procedente', 'nao_procedente', 'em_resolucao', 'resolvida', 'encerrada'];
 
