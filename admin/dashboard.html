@@ -209,12 +209,14 @@ overlay.addEventListener('click', closeDrawer);
 
 function closeDrawer() {
   drawer.classList.remove('animate-in');
+  drawer.classList.remove('is-open');
   overlay.style.display = 'none';
   setTimeout(() => { drawer.style.display = 'none'; }, 200);
 }
 
 async function openDrawer(referenceCode) {
   drawer.style.display = 'block';
+  drawer.classList.add('is-open');
   overlay.style.display = 'block';
   requestAnimationFrame(() => drawer.classList.add('animate-in'));
   document.getElementById('drawer-content').innerHTML = `<div class="skeleton" style="height:200px;"></div>`;
