@@ -118,7 +118,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .main-nav a:hover { background: var(--teal-tint); color: var(--teal-dark); }
 .main-nav a.is-active { background: var(--teal); color: #fff; }
-.nav-toggle { display: none; }
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.nav-toggle:hover { border-color: var(--teal); color: var(--teal-dark); }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -395,6 +408,12 @@ input::placeholder, textarea::placeholder { color: #9AA5AF; }
 .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
 .badge-recebida { background: #EAF0F5; color: #34546E; }
 .badge-recebida::before { background: #34546E; }
+.badge-registada { background: var(--gold-tint); color: #8A5F13; }
+.badge-registada::before { background: var(--gold); }
+.badge-procedente { background: var(--teal-tint); color: var(--teal-dark); }
+.badge-procedente::before { background: var(--teal); }
+.badge-nao_procedente { background: #ECECEC; color: #55606A; }
+.badge-nao_procedente::before { background: #8B95A0; }
 .badge-em_analise { background: var(--gold-tint); color: #8A5F13; }
 .badge-em_analise::before { background: var(--gold); }
 .badge-em_resolucao { background: #EAE3F7; color: #5B3E96; }
@@ -463,5 +482,23 @@ input::placeholder, textarea::placeholder { color: #9AA5AF; }
 @media (max-width: 860px) {
   .hero-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
-  .main-nav { display: none; }
+
+  .site-header .container { position: relative; }
+  .nav-toggle { display: flex; }
+  .main-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 24px 18px;
+    box-shadow: var(--shadow-card);
+  }
+  .main-nav.is-open { display: flex; }
+  .main-nav a { text-align: left; padding: 12px 14px; }
 }

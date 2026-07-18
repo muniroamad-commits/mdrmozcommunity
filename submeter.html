@@ -14,6 +14,9 @@
       <span class="brand-mark"><img src="img/logo-adin.jpg" alt="Logótipo ADIN"></span>
       <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
     </a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <nav class="main-nav">
       <a href="submeter.html" class="is-active">Apresentar Preocupação</a>
       <a href="acompanhar.html">Acompanhar Preocupação</a>
@@ -38,6 +41,20 @@
       <div id="alert-box"></div>
 
       <form id="complaint-form" class="form-card">
+
+        <div class="form-section">
+          <div class="form-section-title">Tipo de preocupação</div>
+          <div class="field">
+            <label for="concern_type">O que pretende comunicar? <span class="required">*</span></label>
+            <select id="concern_type" name="concern_type" required>
+              <option value="">Seleccione uma opção...</option>
+            </select>
+            <div class="hint" id="vbg-hint" style="display:none; color:var(--brick); font-weight:600;">
+              Casos de Violência Baseada no Género ou Exploração e Abuso Sexual são tratados com confidencialidade reforçada.
+              Se preferir, também pode ligar directamente para a linha de emergência em vez de preencher este formulário.
+            </div>
+          </div>
+        </div>
 
         <div class="form-section">
           <div class="form-section-title">Projecto</div>
@@ -167,6 +184,8 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/store.js"></script>
 <script>
+const concernTypeSelect = document.getElementById('concern_type');
+const vbgHint = document.getElementById('vbg-hint');
 const projectSelect = document.getElementById('project');
 const provinceSelect = document.getElementById('province');
 const districtSelect = document.getElementById('district');
@@ -179,6 +198,11 @@ const fileList = document.getElementById('file-list');
 const alertBox = document.getElementById('alert-box');
 const form = document.getElementById('complaint-form');
 const submitBtn = document.getElementById('submit-btn');
+
+Object.entries(MDR.getConcernTypes()).forEach(([value, label]) => concernTypeSelect.add(new Option(label, value)));
+concernTypeSelect.addEventListener('change', () => {
+  vbgHint.style.display = concernTypeSelect.value === 'vbg_psea' ? 'block' : 'none';
+});
 
 MDR.getProjects().forEach(p => projectSelect.add(new Option(p, p)));
 MDR.getProvinces().forEach(p => provinceSelect.add(new Option(p, p)));
@@ -225,6 +249,7 @@ form.addEventListener('submit', async (e) => {
   submitBtn.innerHTML = '<span class="spinner"></span> A submeter...';
 
   const payload = {
+    concern_type: concernTypeSelect.value,
     project: projectSelect.value,
     occurrence_date: document.getElementById('occurrence_date').value,
     province: provinceSelect.value,
@@ -239,8 +264,8 @@ form.addEventListener('submit', async (e) => {
     description: document.getElementById('description').value,
   };
 
-  if (!payload.community || !payload.subject || !payload.province || !payload.district) {
-    alertBox.innerHTML = '<div class="alert alert-error">Preencha os campos obrigatórios: Província, Distrito, Comunidade e Assunto.</div>';
+  if (!payload.concern_type || !payload.community || !payload.subject || !payload.province || !payload.district) {
+    alertBox.innerHTML = '<div class="alert alert-error">Preencha os campos obrigatórios: Tipo de preocupação, Província, Distrito, Comunidade e Assunto.</div>';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submeter';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -256,6 +281,7 @@ form.addEventListener('submit', async (e) => {
       : '';
     document.getElementById('success-modal').style.display = 'flex';
     form.reset();
+    vbgHint.style.display = 'none';
     districtSelect.innerHTML = '<option value="">Seleccione primeiro a província...</option>';
     postoSelect.innerHTML = '<option value="">Seleccione primeiro o distrito...</option>';
     postoSelect.disabled = true;
@@ -268,6 +294,13 @@ form.addEventListener('submit', async (e) => {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submeter';
   }
+});
+</script>
+<script>
+document.getElementById('nav-toggle')?.addEventListener('click', () => {
+  const nav = document.querySelector('.main-nav');
+  const open = nav.classList.toggle('is-open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', String(open));
 });
 </script>
 </body>

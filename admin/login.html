@@ -14,6 +14,9 @@
       <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
       <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
     </a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <nav class="main-nav">
       <a href="../submeter.html">Apresentar Preocupação</a>
       <a href="../acompanhar.html">Acompanhar Preocupação</a>
@@ -83,6 +86,13 @@ form.addEventListener('submit', async (e) => {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Entrar';
   }
+});
+</script>
+<script>
+document.getElementById('nav-toggle')?.addEventListener('click', () => {
+  const nav = document.querySelector('.main-nav');
+  const open = nav.classList.toggle('is-open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', String(open));
 });
 </script>
 </body>

@@ -49,6 +49,9 @@
       <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
       <span class="brand-name">MDR MozCommunity<small>Painel de Gestão — ADIN</small></span>
     </a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <nav class="main-nav">
       <span class="small-note" id="admin-name-label" style="margin-right:8px;"></span>
       <a href="users.html" id="users-link" style="display:none;">Utilizadores</a>
@@ -62,7 +65,9 @@
     <h4>Estado</h4>
     <button class="filter-option is-active" data-filter="status" data-value="">Todos os casos</button>
     <button class="filter-option" data-filter="status" data-value="recebida">Recebida</button>
-    <button class="filter-option" data-filter="status" data-value="em_analise">Em análise</button>
+    <button class="filter-option" data-filter="status" data-value="registada">Registada</button>
+    <button class="filter-option" data-filter="status" data-value="procedente">Aprovada (Procedente)</button>
+    <button class="filter-option" data-filter="status" data-value="nao_procedente">Não Procedente</button>
     <button class="filter-option" data-filter="status" data-value="em_resolucao">Em resolução</button>
     <button class="filter-option" data-filter="status" data-value="resolvida">Resolvida</button>
     <button class="filter-option" data-filter="status" data-value="encerrada">Encerrada</button>
@@ -82,10 +87,10 @@
 
     <table class="cases">
       <thead>
-        <tr><th>Código</th><th>Assunto</th><th>Localização</th><th>Componente</th><th>Estado</th><th>Recebido</th></tr>
+        <tr><th>Código</th><th>Tipo</th><th>Assunto</th><th>Localização</th><th>Componente</th><th>Estado</th><th>Recebido</th></tr>
       </thead>
       <tbody id="cases-tbody">
-        <tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>
+        <tr><td colspan="7" class="skeleton" style="height:40px;"></td></tr>
       </tbody>
     </table>
   </main>
@@ -165,20 +170,21 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 
 async function loadCases() {
   const tbody = document.getElementById('cases-tbody');
-  tbody.innerHTML = `<tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="skeleton" style="height:40px;"></td></tr>`;
 
   try {
     const rows = await MDR.listComplaints(state);
     document.getElementById('results-count').textContent = `${rows.length} caso(s) encontrado(s)`;
 
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="small-note" style="padding:24px;">Nenhum caso encontrado com estes filtros.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="small-note" style="padding:24px;">Nenhum caso encontrado com estes filtros.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = rows.map(c => `
       <tr data-id="${c.reference_code}">
         <td class="ref-code">${c.reference_code}</td>
+        <td class="small-note">${escapeHtml(MDR.getConcernTypes()[c.concern_type] || '—')}</td>
         <td>${escapeHtml(c.subject)}</td>
         <td>${[c.province, c.district].filter(Boolean).join(', ') || '—'}</td>
         <td>${escapeHtml(c.project || '—')}</td>
@@ -192,7 +198,7 @@ async function loadCases() {
     });
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="6"><div class="alert alert-error">Não foi possível carregar os casos.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="alert alert-error">Não foi possível carregar os casos.</div></td></tr>`;
   }
 }
 
@@ -241,40 +247,10 @@ function renderDrawer(c) {
   `).join('');
 
   const canEdit = currentAdmin && currentAdmin.role !== 'readonly';
-  const updateSectionHtml = canEdit ? `
-    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Actualizar caso</h4>
-    <div id="update-alert"></div>
-    <form id="update-form" class="form-card" style="padding:18px;">
-      <div class="field">
-        <label for="upd-status">Novo estado</label>
-        <select id="upd-status">
-          <option value="recebida" ${c.status==='recebida'?'selected':''}>Recebida</option>
-          <option value="em_analise" ${c.status==='em_analise'?'selected':''}>Em análise</option>
-          <option value="em_resolucao" ${c.status==='em_resolucao'?'selected':''}>Em resolução</option>
-          <option value="resolvida" ${c.status==='resolvida'?'selected':''}>Resolvida</option>
-          <option value="encerrada" ${c.status==='encerrada'?'selected':''}>Encerrada</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="upd-priority">Prioridade</label>
-        <select id="upd-priority">
-          <option value="baixa" ${c.priority==='baixa'?'selected':''}>Baixa</option>
-          <option value="normal" ${c.priority==='normal'?'selected':''}>Normal</option>
-          <option value="alta" ${c.priority==='alta'?'selected':''}>Alta</option>
-          <option value="urgente" ${c.priority==='urgente'?'selected':''}>Urgente</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="upd-note">Nota / actualização</label>
-        <textarea id="upd-note" placeholder="Descreva a acção tomada ou o ponto de situação"></textarea>
-      </div>
-      <div class="checkbox-row" style="margin-bottom:16px;">
-        <input type="checkbox" id="upd-visible" checked>
-        <label for="upd-visible">Visível para quem apresentou o caso (em "Acompanhar Preocupação")</label>
-      </div>
-      <button type="submit" class="btn btn-primary btn-block">Guardar actualização</button>
-    </form>
-  ` : `
+  const isAdminGeral = currentAdmin && currentAdmin.role === 'admin';
+  const concernLabel = MDR.getConcernTypes()[c.concern_type] || c.concern_type || '—';
+
+  const updateSectionHtml = canEdit ? renderWorkflowPanel(c, isAdminGeral) : `
     <div class="small-note" style="margin-top:20px; padding:12px; border:1px solid var(--line); border-radius:8px;">A tua conta tem acesso apenas de leitura — não podes alterar este caso.</div>
   `;
 
@@ -285,6 +261,7 @@ function renderDrawer(c) {
     <span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span>
 
     <dl class="kv">
+      <dt>Tipo</dt><dd>${escapeHtml(concernLabel)}</dd>
       <dt>Componente</dt><dd>${escapeHtml(c.project || '—')}</dd>
       <dt>Localização</dt><dd>${escapeHtml(meta || '—')}</dd>
       <dt>Comunidade</dt><dd>${escapeHtml(c.community)}</dd>
@@ -305,25 +282,110 @@ function renderDrawer(c) {
   `;
 
   if (!canEdit) return;
+  wireWorkflowPanel(c, isAdminGeral);
+}
 
-  document.getElementById('update-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const alertEl = document.getElementById('update-alert');
+// Define, para cada estado, quais as acções seguintes disponíveis e quem
+// as pode executar. Isto é o que aparecia em falta antes: ao abrir um
+// caso, a pessoa via só um menu genérico em vez de passos claros.
+function renderWorkflowPanel(c, isAdminGeral) {
+  const steps = {
+    recebida: [{ to: 'registada', label: 'Registar caso', roles: ['admin', 'provincial'] }],
+    registada: [
+      { to: 'procedente', label: 'Aprovar (Procedente)', roles: ['admin'] },
+      { to: 'nao_procedente', label: 'Marcar Não Procedente', roles: ['admin'] },
+    ],
+    procedente: [{ to: 'em_resolucao', label: 'Iniciar seguimento', roles: ['admin', 'provincial'] }],
+    nao_procedente: [{ to: 'encerrada', label: 'Encerrar caso', roles: ['admin'] }],
+    em_resolucao: [{ to: 'resolvida', label: 'Marcar como Resolvida', roles: ['admin', 'provincial'] }],
+    resolvida: [{ to: 'encerrada', label: 'Encerrar caso', roles: ['admin'] }],
+    encerrada: [],
+  };
+
+  const role = isAdminGeral ? 'admin' : 'provincial';
+  const available = (steps[c.status] || []).filter(s => s.roles.includes(role));
+  const waitingMessages = {
+    registada: 'Este caso está registado e aguarda aprovação do administrador geral (Procedente / Não Procedente).',
+    nao_procedente: 'Este caso foi considerado não procedente e aguarda encerramento pelo administrador geral.',
+    resolvida: 'Este caso está marcado como resolvido e aguarda encerramento pelo administrador geral.',
+    encerrada: 'Este caso está encerrado.',
+  };
+
+  const actionsHtml = available.length
+    ? available.map(s => `<button type="button" class="btn btn-primary btn-sm workflow-btn" data-to="${s.to}">${s.label}</button>`).join(' ')
+    : (waitingMessages[c.status] ? `<p class="small-note">${waitingMessages[c.status]}</p>` : '');
+
+  return `
+    <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
+    <div id="update-alert"></div>
+    <div class="form-card" style="padding:18px;">
+      <div class="field" style="margin-bottom:14px;">
+        <label>Acção</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">${actionsHtml || '<span class="small-note">Sem acções disponíveis para o teu nível de acesso neste momento.</span>'}</div>
+      </div>
+      <div class="field">
+        <label for="upd-priority">Prioridade</label>
+        <select id="upd-priority">
+          <option value="baixa" ${c.priority==='baixa'?'selected':''}>Baixa</option>
+          <option value="normal" ${c.priority==='normal'?'selected':''}>Normal</option>
+          <option value="alta" ${c.priority==='alta'?'selected':''}>Alta</option>
+          <option value="urgente" ${c.priority==='urgente'?'selected':''}>Urgente</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="upd-note">Nota (usada pela acção acima, ou guardada sozinha)</label>
+        <textarea id="upd-note" placeholder="Descreva a acção tomada ou o ponto de situação"></textarea>
+      </div>
+      <div class="checkbox-row" style="margin-bottom:16px;">
+        <input type="checkbox" id="upd-visible" checked>
+        <label for="upd-visible">Visível para quem apresentou o caso (em "Acompanhar Preocupação")</label>
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" id="save-note-btn">Guardar nota / prioridade (sem mudar estado)</button>
+    </div>
+  `;
+}
+
+function wireWorkflowPanel(c, isAdminGeral) {
+  const alertEl = document.getElementById('update-alert');
+
+  async function runUpdate(payload, btn) {
     alertEl.innerHTML = '';
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
     try {
-      await MDR.updateComplaint(c.reference_code, {
-        status: document.getElementById('upd-status').value,
-        priority: document.getElementById('upd-priority').value,
-        note: document.getElementById('upd-note').value || null,
-        visible_to_public: document.getElementById('upd-visible').checked,
-      });
+      await MDR.updateComplaint(c.reference_code, payload);
       openDrawer(c.reference_code);
       loadCases();
     } catch (err) {
       console.error(err);
       alertEl.innerHTML = `<div class="alert alert-error">${err.message || 'Não foi possível guardar a actualização.'}</div>`;
+      btn.disabled = false;
+      btn.textContent = original;
     }
+  }
+
+  document.querySelectorAll('.workflow-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      runUpdate({
+        status: btn.dataset.to,
+        priority: document.getElementById('upd-priority').value,
+        note: document.getElementById('upd-note').value || null,
+        visible_to_public: document.getElementById('upd-visible').checked,
+      }, btn);
+    });
   });
+
+  const saveNoteBtn = document.getElementById('save-note-btn');
+  if (saveNoteBtn) {
+    saveNoteBtn.addEventListener('click', () => {
+      runUpdate({
+        priority: document.getElementById('upd-priority').value,
+        note: document.getElementById('upd-note').value || null,
+        visible_to_public: document.getElementById('upd-visible').checked,
+      }, saveNoteBtn);
+    });
+  }
 }
 
 function formatDate(iso) {
@@ -335,6 +397,13 @@ function escapeHtml(str) {
   div.textContent = str == null ? '' : str;
   return div.innerHTML;
 }
+</script>
+<script>
+document.getElementById('nav-toggle')?.addEventListener('click', () => {
+  const nav = document.querySelector('.main-nav');
+  const open = nav.classList.toggle('is-open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', String(open));
+});
 </script>
 </body>
 </html>

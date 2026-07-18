@@ -17,6 +17,9 @@
       </span>
       <span class="brand-name">MDR MozCommunity<small>Diálogo &amp; Reclamações — ADIN</small></span>
     </a>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <nav class="main-nav">
       <a href="submeter.html">Apresentar Preocupação</a>
       <a href="acompanhar.html">Acompanhar Preocupação</a>
@@ -42,10 +45,8 @@
       </div>
       <div class="hero-panel">
         <h3>Linhas de emergência gratuitas</h3>
-        <div class="emergency-line"><span class="region">Norte</span><span class="number">800 900 200</span></div>
-        <div class="emergency-line"><span class="region">Centro</span><span class="number">800 900 300</span></div>
-        <div class="emergency-line"><span class="region">Sul</span><span class="number">800 900 400</span></div>
-        <div class="emergency-line"><span class="region">E-mail</span><span class="number" style="font-size:0.85rem">mdr@exemplo.org</span></div>
+        <div class="emergency-line"><span class="region">Linha Nacional</span><span class="number">XXX</span></div>
+        <div class="emergency-line"><span class="region">E-mail</span><span class="number" style="font-size:0.85rem">mdr@adin.mdr.mz</span></div>
       </div>
     </div>
   </section>
@@ -68,9 +69,9 @@
   <section style="background:var(--paper-raised); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
     <div class="container">
       <div class="section-head">
-        <span class="eyebrow">Projectos abrangidos</span>
-        <h2>Projectos que utilizam este mecanismo</h2>
-        <p>Este canal serve as comunidades afectadas pelos seguintes projectos.</p>
+        <span class="eyebrow">Componentes do programa</span>
+        <h2>Componentes que este mecanismo abrange</h2>
+        <p>Este canal serve as comunidades afectadas pelas seguintes componentes do programa.</p>
       </div>
       <div class="project-tags" id="project-tags"></div>
     </div>
@@ -112,6 +113,13 @@
 <script src="js/store.js"></script>
 <script>
 document.getElementById('project-tags').innerHTML = MDR.getProjects().map(p => `<span>${p}</span>`).join('');
+</script>
+<script>
+document.getElementById('nav-toggle')?.addEventListener('click', () => {
+  const nav = document.querySelector('.main-nav');
+  const open = nav.classList.toggle('is-open');
+  document.getElementById('nav-toggle').setAttribute('aria-expanded', String(open));
+});
 </script>
 </body>
 </html>

@@ -214,3 +214,45 @@ No ecrã "Utilizadores", clica em "Remover acesso" — isto retira as
 permissões dela na plataforma imediatamente. A conta de login continua a
 existir no Firebase (para eliminar a conta por completo, faz isso em
 Authentication → Users).
+
+## Fluxo de aprovação de casos
+
+Cada caso passa pelos seguintes estados, com acções específicas por nível de acesso:
+
+1. **Recebida** — criada automaticamente quando alguém submete o formulário público.
+2. **Registada** — a equipa provincial (ou o administrador) confirma que recebeu e regista o caso.
+3. **Aprovada (Procedente) / Não Procedente** — decisão exclusiva do
+   **Administrador geral**: valida se o caso deve avançar ou não.
+4. **Em resolução** — depois de aprovado, a equipa provincial dá seguimento ao caso.
+5. **Resolvida** — a equipa provincial marca o trabalho como concluído.
+6. **Encerrada** — fecho formal do caso, exclusivo do **Administrador geral**,
+   quer o caso tenha sido aprovado ou marcado como não procedente.
+
+Estas regras são aplicadas tanto na interface (só aparecem os botões que a
+pessoa pode usar) como no Firestore (mesmo que alguém tente contornar a
+interface, o servidor recusa a alteração).
+
+## Tipos de preocupação
+
+O formulário público pede à pessoa para classificar a preocupação como:
+Sugestão, Pedido de informação, Elogio, Reclamação, ou VBG/PSEA (Violência
+Baseada no Género / Prevenção de Exploração e Abuso Sexual). Casos VBG/PSEA
+mostram uma nota a incentivar contacto directo pela linha de emergência, dada
+a sensibilidade do tema.
+
+## Domínio
+
+Este site está preparado para ser publicado em `adin.mdr.mz`. Quando o
+domínio estiver activo:
+1. Configura o domínio personalizado no serviço de alojamento escolhido
+   (GitHub Pages → Settings → Pages → Custom domain).
+2. Volta ao **Firebase Console → Authentication → Configurações → Domínios
+   autorizados** e adiciona `adin.mdr.mz` — sem isto, o login administrativo
+   não funciona nesse domínio (é o mesmo passo que fizeste para
+   `muniroamad.github.io`).
+
+## Linha de emergência
+
+O número de telefone da linha nacional está temporariamente marcado como
+`XXX` em `index.html` — substitui pelo número real assim que estiver
+disponível (procura por `Linha Nacional` no ficheiro).

@@ -99,14 +99,34 @@ const MDR = (() => {
     'Outro / Não relacionado a uma componente específica',
   ];
 
+  // Tipos de preocupação que a pessoa pode seleccionar ao submeter.
+  const CONCERN_TYPES = {
+    sugestao: 'Sugestão',
+    pedido_informacao: 'Pedido de informação',
+    elogio: 'Elogio',
+    reclamacao: 'Reclamação',
+    vbg_psea: 'VBG / PSEA (Violência Baseada no Género / Exploração e Abuso Sexual)',
+  };
+
+  // Fluxo de estados de um caso:
+  // recebida → registada (equipa provincial regista) → o administrador
+  // aprova como procedente ou não procedente → a equipa provincial dá
+  // seguimento (em_resolucao → resolvida) → só o administrador encerra.
   const STATUS_LABELS = {
     recebida: 'Recebida',
-    em_analise: 'Em análise',
+    registada: 'Registada',
+    procedente: 'Aprovada (Procedente)',
+    nao_procedente: 'Não Procedente',
     em_resolucao: 'Em resolução',
-    resolvida: 'Resolvida',
+    resolvida: 'Resolvida — aguarda encerramento',
     encerrada: 'Encerrada',
   };
-  const STATUS_ORDER = ['recebida', 'em_analise', 'em_resolucao', 'resolvida', 'encerrada'];
+  const STATUS_ORDER = ['recebida', 'registada', 'procedente', 'nao_procedente', 'em_resolucao', 'resolvida', 'encerrada'];
+
+  // Que estados cada nível de acesso pode atribuir a um caso.
+  // "admin" pode atribuir qualquer um destes; os outros níveis estão
+  // limitados à lista abaixo (aplicado também nas regras do Firestore).
+  const PROVINCIAL_ALLOWED_STATUSES = ['registada', 'em_resolucao', 'resolvida'];
 
   // ---------- Utilitários ----------
   function genReferenceCode() {
@@ -135,6 +155,9 @@ const MDR = (() => {
   }
   function getProjects() {
     return PROJECTS.slice();
+  }
+  function getConcernTypes() {
+    return CONCERN_TYPES;
   }
 
   // ---------- Anexos ----------
@@ -182,6 +205,7 @@ const MDR = (() => {
     const record = {
       reference_code,
       access_pin,
+      concern_type: payload.concern_type || null,
       project: payload.project || null,
       occurrence_date: payload.occurrence_date || null,
       province: payload.province || null,
@@ -232,6 +256,7 @@ const MDR = (() => {
       reference_code: record.reference_code,
       subject: record.subject,
       status: record.status,
+      concern_type: record.concern_type,
       project: record.project,
       province: record.province,
       district: record.district,
@@ -283,6 +308,10 @@ const MDR = (() => {
 
     if (admin.role === 'provincial' && record.province !== admin.province) {
       throw new Error(`Só podes actualizar casos da tua província (${admin.province}).`);
+    }
+
+    if (status && status !== record.status && admin.role === 'provincial' && !PROVINCIAL_ALLOWED_STATUSES.includes(status)) {
+      throw new Error('Só o administrador geral pode aprovar (procedente/não procedente) ou encerrar um caso. Tu podes registar, dar seguimento e marcar como resolvido.');
     }
 
     const updated = { ...record };
@@ -442,8 +471,8 @@ const MDR = (() => {
   }
 
   return {
-    STATUS_LABELS, STATUS_ORDER,
-    getProvinces, getDistricts, getPostos, getProjects,
+    STATUS_LABELS, STATUS_ORDER, PROVINCIAL_ALLOWED_STATUSES,
+    getProvinces, getDistricts, getPostos, getProjects, getConcernTypes,
     submitComplaint, trackComplaint,
     listComplaints, getComplaint, updateComplaint,
     getPublicStats,

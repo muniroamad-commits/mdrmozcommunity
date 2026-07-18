@@ -43,12 +43,24 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         adminDoc().role == 'admin';
     }
+    // Estados que um "Gestor provincial" pode ATRIBUIR a um caso (ex: ao
+    // avançar o processo). Também pode manter o caso no estado actual sem
+    // o alterar (por exemplo, para só acrescentar uma nota) — só não pode
+    // MUDAR o estado para "procedente", "não_procedente" ou "encerrada",
+    // que são decisões exclusivas do Administrador geral.
+    function provincialCanSetStatus(newStatus, oldStatus) {
+      return newStatus == oldStatus || newStatus in ['registada', 'em_resolucao', 'resolvida'];
+    }
     function canEditComplaint(complaintProvince) {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         (
           adminDoc().role == 'admin' ||
-          (adminDoc().role == 'provincial' && adminDoc().province == complaintProvince)
+          (
+            adminDoc().role == 'provincial' &&
+            adminDoc().province == complaintProvince &&
+            provincialCanSetStatus(request.resource.data.status, resource.data.status)
+          )
         );
     }
 
