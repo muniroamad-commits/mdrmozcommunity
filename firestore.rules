@@ -43,13 +43,15 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         adminDoc().role == 'admin';
     }
-    // Acesso à fila confidencial de VBG/PSEA: Administrador geral tem
-    // sempre acesso; qualquer outra pessoa só se tiver "vbg_access: true"
-    // atribuído explicitamente no seu perfil (em Gestão de Utilizadores).
+    // Acesso à fila confidencial de VBG/PSEA: exclusivamente para quem
+    // tiver "vbg_access: true" atribuído explicitamente no seu perfil (em
+    // Gestão de Utilizadores) — incluindo o Administrador geral, que só
+    // tem acesso se essa opção também lhe for atribuída. Não há acesso
+    // automático por nenhum nível de acesso.
     function isVbgAuthorized() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        (adminDoc().role == 'admin' || adminDoc().vbg_access == true);
+        adminDoc().vbg_access == true;
     }
     // Estados que um "Gestor provincial" pode ATRIBUIR a um caso (ex: ao
     // avançar o processo). Também pode manter o caso no estado actual sem

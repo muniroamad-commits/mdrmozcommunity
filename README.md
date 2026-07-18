@@ -279,3 +279,36 @@ muda, independentemente do tipo de caso.
 
 Isto é aplicado nas regras do Firestore (`allow list: if isVbgAuthorized();`
 na colecção `complaints_sensitive`), não só escondido na interface.
+
+## Nível "Gestor de Casos VBG/PSEA"
+
+Além de Administrador geral, Gestor provincial e Só leitura, existe um
+quarto nível de acesso dedicado: **Gestor de Casos VBG/PSEA**. Uma pessoa
+com este nível:
+
+- Ao entrar, é levada directamente para a fila confidencial
+  (`admin/vbg.html`), não para o painel geral de casos.
+- Não tem acesso ao painel geral de casos nem a "Gestão de Utilizadores".
+- Pode gerir todo o fluxo dos casos VBG/PSEA (registar, aprovar/rejeitar,
+  dar seguimento, encerrar).
+
+Se preferires dar acesso à fila confidencial a alguém que também precisa de
+gerir os casos normais (por exemplo, um Gestor provincial que também deve
+ver os casos VBG da sua zona), usa em vez disso a opção "Dar também acesso
+à fila confidencial de VBG/PSEA", que aparece por baixo do nível de acesso
+no formulário de utilizadores.
+
+## Correcção: acesso a VBG/PSEA é sempre uma marcação explícita
+
+O acesso à fila confidencial de VBG/PSEA **não é um nível de acesso à
+parte** — é uma marcação adicional ("Gestor de Casos VBG/PSEA") que se
+liga a qualquer um dos três níveis (Administrador geral, Gestor provincial,
+Só leitura). Isto significa:
+
+- Uma pessoa marcada como Gestor de Casos VBG/PSEA continua a ter acesso
+  aos casos normais de acordo com o seu nível de acesso principal — **não**
+  fica limitada só à fila confidencial.
+- O botão "Casos VBG/PSEA" só aparece para quem tiver essa marcação
+  explicitamente atribuída em "Gestão de Utilizadores" — **incluindo o
+  Administrador geral**, que só o vê se também lhe atribuíres essa marcação.
+  Não há nenhum acesso automático por defeito para ninguém.

@@ -497,7 +497,7 @@ const MDR = (() => {
       // Administrador geral tem sempre acesso à fila confidencial de
       // VBG/PSEA; qualquer outra pessoa só se lhe tiver sido atribuído
       // explicitamente o acesso.
-      isVbgAuthorized: data.role === 'admin' || !!data.vbg_access,
+      isVbgAuthorized: !!data.vbg_access,
       noProfile: false,
     };
     return cachedProfile;

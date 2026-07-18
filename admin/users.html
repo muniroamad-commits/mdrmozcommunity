@@ -14,6 +14,7 @@
   .role-admin { background: var(--teal-tint); color: var(--teal-dark); }
   .role-provincial { background: var(--gold-tint); color: #8A5F13; }
   .role-readonly { background: #ECECEC; color: #55606A; }
+  .role-vbg_manager { background: var(--brick-tint); color: #7A2E1C; }
 </style>
 </head>
 <body>
@@ -89,9 +90,9 @@
             </select>
           </div>
         </div>
-        <div class="checkbox-row" style="margin-bottom:18px;">
+        <div class="checkbox-row" style="margin-bottom:18px;" id="vbg-extra-row">
           <input type="checkbox" id="vbg_access">
-          <label for="vbg_access">Acesso à fila confidencial de VBG/PSEA (o Administrador geral tem sempre acesso, mesmo sem marcar esta opção)</label>
+          <label for="vbg_access">Gestor de Casos VBG/PSEA — dá acesso à fila confidencial, além do nível de acesso escolhido acima. Não é automático para ninguém, nem para o Administrador geral — só quem tiveres esta opção marcada vê o botão "Casos VBG/PSEA".</label>
         </div>
         <button type="submit" class="btn btn-primary" id="save-btn">Guardar utilizador</button>
       </div>
@@ -145,7 +146,7 @@ async function loadUsers() {
         <td class="small-note">${escapeHtml(u.email || '—')}</td>
         <td><span class="role-tag role-${u.role}">${roleLabels[u.role] || u.role}</span></td>
         <td>${escapeHtml(u.province || '—')}</td>
-        <td>${u.role === 'admin' ? '<span class="small-note">sempre</span>' : (u.vbg_access ? '<span class="role-tag role-provincial">Sim</span>' : '<span class="small-note">Não</span>')}</td>
+        <td>${u.vbg_access ? '<span class="role-tag role-vbg_manager">Sim — Gestor VBG</span>' : '<span class="small-note">Não</span>'}</td>
         <td style="text-align:right;">
           <button class="btn btn-secondary btn-sm" onclick="editUser('${u.uid}')">Editar</button>
           <button class="btn btn-secondary btn-sm" onclick="removeUser('${u.uid}')">Remover acesso</button>
