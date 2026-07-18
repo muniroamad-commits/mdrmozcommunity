@@ -10,6 +10,11 @@ const MDR = (() => {
   // componente, datas) — permite estatísticas públicas sem expor nomes,
   // contactos, assuntos ou descrições de ninguém.
   const COMPLAINTS_PUBLIC = 'complaints_public';
+  // Fila confidencial e separada para casos de VBG/PSEA. Nunca aparece na
+  // lista geral de casos nem nas estatísticas públicas — só é visível a
+  // quem tiver acesso explicitamente atribuído (ver "vbg_access" no perfil
+  // de administrador), além do Administrador geral, que tem sempre acesso.
+  const COMPLAINTS_SENSITIVE = 'complaints_sensitive';
 
   // ---------- Localização ----------
   // Restrita às 3 províncias abrangidas pelo Programa PREDIN / Projecto
@@ -189,14 +194,21 @@ const MDR = (() => {
   // ---------- Reclamações (público) ----------
   async function submitComplaint(payload, fileList) {
     const { attachments, skipped } = await filesToAttachments(fileList);
+    const isSensitive = payload.concern_type === 'vbg_psea';
+    const targetCollection = isSensitive ? COMPLAINTS_SENSITIVE : COMPLAINTS;
 
     let reference_code;
     let exists = true;
     let attempts = 0;
     do {
       reference_code = genReferenceCode();
-      const snap = await db.collection(COMPLAINTS).doc(reference_code).get();
-      exists = snap.exists;
+      // Verifica em AMBAS as colecções, para nunca haver códigos repetidos
+      // entre casos normais e casos confidenciais.
+      const [snapA, snapB] = await Promise.all([
+        db.collection(COMPLAINTS).doc(reference_code).get(),
+        db.collection(COMPLAINTS_SENSITIVE).doc(reference_code).get(),
+      ]);
+      exists = snapA.exists || snapB.exists;
       attempts += 1;
     } while (exists && attempts < 5);
 
@@ -221,7 +233,9 @@ const MDR = (() => {
       description: payload.description || null,
       attachments,
       status: 'recebida',
-      priority: 'normal',
+      // Casos VBG/PSEA entram sempre com prioridade urgente, para nunca
+      // ficarem "perdidos" entre os outros casos.
+      priority: isSensitive ? 'urgente' : 'normal',
       assigned_to: null,
       created_at: timestamp,
       updated_at: timestamp,
@@ -230,25 +244,30 @@ const MDR = (() => {
       ],
     };
 
-    await db.collection(COMPLAINTS).doc(reference_code).set(record);
+    await db.collection(targetCollection).doc(reference_code).set(record);
 
-    // Espelho público, sem dados pessoais, para alimentar as estatísticas
-    // públicas sem expor nomes, contactos, assuntos ou descrições.
-    await db.collection(COMPLAINTS_PUBLIC).doc(reference_code).set({
-      reference_code,
-      status: record.status,
-      province: record.province,
-      project: record.project,
-      created_at: record.created_at,
-      updated_at: record.updated_at,
-    });
+    // Espelho público, sem dados pessoais — só para casos NÃO confidenciais.
+    // Casos VBG/PSEA nunca entram nas estatísticas públicas, mesmo agregadas.
+    if (!isSensitive) {
+      await db.collection(COMPLAINTS_PUBLIC).doc(reference_code).set({
+        reference_code,
+        status: record.status,
+        province: record.province,
+        project: record.project,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
+      });
+    }
 
     return { reference_code, access_pin, skipped };
   }
 
   async function trackComplaint(referenceCode, pin) {
     const code = (referenceCode || '').trim().toUpperCase();
-    const snap = await db.collection(COMPLAINTS).doc(code).get();
+    let snap = await db.collection(COMPLAINTS).doc(code).get();
+    if (!snap.exists) {
+      snap = await db.collection(COMPLAINTS_SENSITIVE).doc(code).get();
+    }
     if (!snap.exists) return null;
     const record = snap.data();
     if (record.access_pin !== (pin || '').trim()) return null;
@@ -342,6 +361,73 @@ const MDR = (() => {
     return updated;
   }
 
+  // ---------- Fila confidencial de VBG/PSEA ----------
+  // Só acessível a quem tiver "isVbgAuthorized" (Administrador geral, ou
+  // alguém com vbg_access atribuído em "Gestão de Utilizadores"). Estes
+  // casos vivem numa colecção Firestore completamente separada dos casos
+  // normais, por isso nunca aparecem na lista geral nem nas estatísticas
+  // públicas, mesmo que alguém sem acesso tente listar "complaints".
+  function requireVbgAccess() {
+    const admin = getCurrentAdminSync();
+    if (!admin || admin.noProfile) throw new Error('A tua conta não tem permissões configuradas.');
+    if (!admin.isVbgAuthorized) throw new Error('Não tens acesso à fila confidencial de VBG/PSEA.');
+    return admin;
+  }
+
+  async function listVbgComplaints(filters = {}) {
+    requireVbgAccess();
+    let query = db.collection(COMPLAINTS_SENSITIVE);
+    if (filters.status) query = query.where('status', '==', filters.status);
+    if (filters.province) query = query.where('province', '==', filters.province);
+
+    const snap = await query.get();
+    let rows = snap.docs.map(d => d.data());
+
+    if (filters.q) {
+      const q = filters.q.toLowerCase();
+      rows = rows.filter(c =>
+        c.subject.toLowerCase().includes(q) ||
+        c.reference_code.toLowerCase().includes(q) ||
+        (c.community || '').toLowerCase().includes(q)
+      );
+    }
+
+    return rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  async function getVbgComplaint(referenceCode) {
+    requireVbgAccess();
+    const snap = await db.collection(COMPLAINTS_SENSITIVE).doc(referenceCode).get();
+    return snap.exists ? snap.data() : null;
+  }
+
+  async function updateVbgComplaint(referenceCode, { status, priority, note, visible_to_public }) {
+    const admin = requireVbgAccess();
+
+    const ref = db.collection(COMPLAINTS_SENSITIVE).doc(referenceCode);
+    const snap = await ref.get();
+    if (!snap.exists) throw new Error('Caso não encontrado.');
+    const record = snap.data();
+
+    const updated = { ...record };
+    if (status) updated.status = status;
+    if (priority) updated.priority = priority;
+    updated.updated_at = nowIso();
+
+    if (note || status) {
+      updated.updates = [...(record.updates || []), {
+        status: status || record.status,
+        note: note || null,
+        visible_to_public: visible_to_public !== false,
+        admin_name: admin ? admin.name : null,
+        created_at: nowIso(),
+      }];
+    }
+
+    await ref.set(updated);
+    return updated;
+  }
+
   // ---------- Estatísticas públicas ----------
   // Lê exclusivamente a colecção "complaints_public" (sem dados pessoais),
   // que é de leitura pública segundo as regras do Firestore fornecidas.
@@ -407,6 +493,11 @@ const MDR = (() => {
       name: data.name || user.email.split('@')[0],
       role: data.role,       // 'admin' | 'provincial' | 'readonly'
       province: data.province || null,
+      vbg_access: !!data.vbg_access,
+      // Administrador geral tem sempre acesso à fila confidencial de
+      // VBG/PSEA; qualquer outra pessoa só se lhe tiver sido atribuído
+      // explicitamente o acesso.
+      isVbgAuthorized: data.role === 'admin' || !!data.vbg_access,
       noProfile: false,
     };
     return cachedProfile;
@@ -454,7 +545,7 @@ const MDR = (() => {
     return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
   }
 
-  async function upsertAdminUser(uid, { name, role, province, email }) {
+  async function upsertAdminUser(uid, { name, role, province, email, vbg_access }) {
     if (!uid || !uid.trim()) throw new Error('Indique o User UID (Firebase Console → Authentication → Users).');
     if (!['admin', 'provincial', 'readonly'].includes(role)) throw new Error('Nível de acesso inválido.');
     if (role === 'provincial' && !province) throw new Error('Indique a província para o nível "Gestor provincial".');
@@ -463,6 +554,7 @@ const MDR = (() => {
       email: email || null,
       role,
       province: role === 'provincial' ? province : null,
+      vbg_access: !!vbg_access,
       updated_at: nowIso(),
     }, { merge: true });
   }
@@ -476,6 +568,7 @@ const MDR = (() => {
     getProvinces, getDistricts, getPostos, getProjects, getConcernTypes,
     submitComplaint, trackComplaint,
     listComplaints, getComplaint, updateComplaint,
+    listVbgComplaints, getVbgComplaint, updateVbgComplaint,
     getPublicStats,
     adminLogin, adminLogout, onAuthChange, getCurrentAdminSync, changeAdminPassword,
     listAdminUsers, upsertAdminUser, removeAdminUser,

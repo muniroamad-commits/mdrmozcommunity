@@ -256,3 +256,26 @@ domínio estiver activo:
 O número de telefone da linha nacional está temporariamente marcado como
 `XXX` em `index.html` — substitui pelo número real assim que estiver
 disponível (procura por `Linha Nacional` no ficheiro).
+
+## Fila confidencial de VBG/PSEA
+
+Quando alguém selecciona "VBG/PSEA" como tipo de preocupação no formulário
+público, o caso:
+
+- É gravado numa colecção Firestore **completamente separada** (`complaints_sensitive`),
+  não na colecção geral de casos.
+- Recebe automaticamente **prioridade urgente**.
+- **Nunca aparece** na lista geral de casos do painel, nem nas estatísticas
+  públicas — mesmo agregadas.
+- Só é visível a quem tiver acesso explicitamente atribuído em "Gestão de
+  Utilizadores" (opção "Acesso à fila confidencial de VBG/PSEA"), além do
+  **Administrador geral**, que tem sempre acesso.
+- Tem a sua própria página, `admin/vbg.html`, acessível pelo link "VBG/PSEA"
+  (a vermelho) no menu — que só aparece para quem tem esse acesso.
+
+A pessoa que submeteu o caso continua a poder acompanhá-lo normalmente em
+"Acompanhar Preocupação", com o código de referência e o PIN — isso não
+muda, independentemente do tipo de caso.
+
+Isto é aplicado nas regras do Firestore (`allow list: if isVbgAuthorized();`
+na colecção `complaints_sensitive`), não só escondido na interface.

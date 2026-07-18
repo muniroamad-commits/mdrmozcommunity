@@ -3,42 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Painel de Gestão — MDR MozCommunity</title>
+<title>Casos VBG/PSEA (Confidencial) — MDR MozCommunity</title>
 <link rel="stylesheet" href="../css/style.css">
 <style>
-  .admin-shell { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 76px); }
+  .vbg-banner { background: var(--brick-tint); border: 1.5px solid var(--brick); color: #7A2E1C; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 0.9rem; }
+  .vbg-banner strong { color: #7A2E1C; }
+  .admin-shell { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 76px); }
   .admin-sidebar { border-right: 1px solid var(--line); padding: 24px 18px; background: var(--paper-raised); }
   .admin-sidebar h4 { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin: 20px 0 8px; }
   .admin-sidebar h4:first-child { margin-top: 0; }
   .filter-option { display: block; width: 100%; text-align: left; background: none; border: none; padding: 7px 10px; border-radius: 7px; font-size: 0.88rem; color: var(--slate); cursor: pointer; font-family: var(--font-body); }
-  .filter-option:hover { background: var(--teal-tint); }
-  .filter-option.is-active { background: var(--teal); color: #fff; font-weight: 600; }
+  .filter-option:hover { background: var(--brick-tint); }
+  .filter-option.is-active { background: var(--brick); color: #fff; font-weight: 600; }
   .admin-main { padding: 24px 28px; }
-  .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
-  .search-input { max-width: 320px; }
   table.cases { width: 100%; border-collapse: collapse; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   table.cases th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); padding: 12px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-weight: 500;}
   table.cases td { padding: 13px 14px; border-bottom: 1px solid var(--line); font-size: 0.88rem; vertical-align: middle; }
   table.cases tr:last-child td { border-bottom: none; }
   table.cases tr { cursor: pointer; }
-  table.cases tr:hover td { background: var(--teal-tint); }
+  table.cases tr:hover td { background: var(--brick-tint); }
   .ref-code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-muted); }
-
   .drawer-overlay { position: fixed; inset: 0; background: rgba(24,36,48,0.5); z-index: 90; display: none; }
   .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); background: var(--paper); z-index: 91; transform: translateX(100%); transition: transform 0.22s ease; overflow-y: auto; display: none; }
   .drawer.is-open { display: block; }
   .drawer.is-open.animate-in { transform: translateX(0); }
-  .drawer-inner { padding: 26px; }
+  .drawer-inner, .drawer-close { }
   .drawer-close { position: absolute; top: 20px; right: 20px; background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 1.4rem; line-height: 1; }
   .kv { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; font-size: 0.88rem; margin: 16px 0; }
   .kv dt { color: var(--ink-muted); }
   .kv dd { margin: 0; }
-  .attach-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 8px; font-size: 0.85rem; }
-
-  @media (max-width: 860px) {
-    .admin-shell { grid-template-columns: 1fr; }
-    .admin-sidebar { display: none; }
-  }
+  .denied { max-width: 520px; margin: 60px auto; text-align: center; }
 </style>
 </head>
 <body>
@@ -47,60 +41,73 @@
   <div class="container">
     <a href="../index.html" class="brand">
       <span class="brand-mark"><img src="../img/logo-adin.jpg" alt="Logótipo ADIN"></span>
-      <span class="brand-name">MDR MozCommunity<small>Painel de Gestão — ADIN</small></span>
+      <span class="brand-name">MDR MozCommunity<small>Fila Confidencial — VBG/PSEA</small></span>
     </a>
     <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <nav class="main-nav">
+      <a href="dashboard.html">Casos</a>
       <span class="small-note" id="admin-name-label" style="margin-right:8px;"></span>
-      <a href="users.html" id="users-link" style="display:none;">Utilizadores</a>
-      <a href="vbg.html" id="vbg-link" style="display:none; color:var(--brick); font-weight:700;">VBG/PSEA</a>
       <a href="#" id="logout-link">Sair</a>
     </nav>
   </div>
 </header>
 
-<div class="admin-shell">
-  <aside class="admin-sidebar">
-    <h4>Estado</h4>
-    <button class="filter-option is-active" data-filter="status" data-value="">Todos os casos</button>
-    <button class="filter-option" data-filter="status" data-value="recebida">Recebida</button>
-    <button class="filter-option" data-filter="status" data-value="em_analise">Em análise (antigo)</button>
-    <button class="filter-option" data-filter="status" data-value="registada">Registada</button>
-    <button class="filter-option" data-filter="status" data-value="procedente">Aprovada (Procedente)</button>
-    <button class="filter-option" data-filter="status" data-value="nao_procedente">Não Procedente</button>
-    <button class="filter-option" data-filter="status" data-value="em_resolucao">Em resolução</button>
-    <button class="filter-option" data-filter="status" data-value="resolvida">Resolvida</button>
-    <button class="filter-option" data-filter="status" data-value="encerrada">Encerrada</button>
+<div id="denied-area" class="container" style="display:none;">
+  <div class="denied">
+    <h2>Acesso restrito</h2>
+    <p>Não tens permissão para consultar a fila confidencial de VBG/PSEA. Se precisares de acesso, pede ao Administrador geral para to atribuir em "Gestão de Utilizadores".</p>
+    <a href="dashboard.html" class="btn btn-secondary">Voltar aos casos</a>
+  </div>
+</div>
 
-    <h4>Província</h4>
-    <div id="province-filters"></div>
-  </aside>
-
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <div>
-        <h2 style="margin:0;">Casos registados</h2>
-        <p class="small-note" style="margin:2px 0 0;" id="results-count">A carregar...</p>
-      </div>
-      <input type="search" class="search-input" id="search-input" placeholder="Pesquisar por assunto, código, comunidade, nome ou telefone...">
+<div id="main-area" style="display:none;">
+  <div class="container" style="padding-top:24px;">
+    <div class="vbg-banner">
+      <strong>Fila confidencial.</strong> Estes casos (Violência Baseada no Género / Exploração e Abuso Sexual) só
+      são visíveis a quem tens acesso explicitamente atribuído, além do Administrador geral. Trata esta informação com o máximo cuidado.
     </div>
+  </div>
 
-    <table class="cases">
-      <thead>
-        <tr><th>Código</th><th>Tipo</th><th>Assunto</th><th>Localização</th><th>Componente</th><th>Estado</th><th>Recebido</th></tr>
-      </thead>
-      <tbody id="cases-tbody">
-        <tr><td colspan="7" class="skeleton" style="height:40px;"></td></tr>
-      </tbody>
-    </table>
-  </main>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <h4>Estado</h4>
+      <button class="filter-option is-active" data-filter="status" data-value="">Todos os casos</button>
+      <button class="filter-option" data-filter="status" data-value="recebida">Recebida</button>
+      <button class="filter-option" data-filter="status" data-value="registada">Registada</button>
+      <button class="filter-option" data-filter="status" data-value="procedente">Aprovada (Procedente)</button>
+      <button class="filter-option" data-filter="status" data-value="nao_procedente">Não Procedente</button>
+      <button class="filter-option" data-filter="status" data-value="em_resolucao">Em resolução</button>
+      <button class="filter-option" data-filter="status" data-value="resolvida">Resolvida</button>
+      <button class="filter-option" data-filter="status" data-value="encerrada">Encerrada</button>
+
+      <h4>Província</h4>
+      <div id="province-filters"></div>
+    </aside>
+
+    <main class="admin-main">
+      <div class="admin-topbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2 style="margin:0;">Casos VBG/PSEA</h2>
+          <p class="small-note" style="margin:2px 0 0;" id="results-count">A carregar...</p>
+        </div>
+        <input type="search" class="search-input" id="search-input" style="max-width:320px;" placeholder="Pesquisar por assunto, código ou comunidade...">
+      </div>
+
+      <table class="cases">
+        <thead><tr><th>Código</th><th>Assunto</th><th>Localização</th><th>Estado</th><th>Prioridade</th><th>Recebido</th></tr></thead>
+        <tbody id="cases-tbody">
+          <tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
 </div>
 
 <div class="drawer-overlay" id="drawer-overlay"></div>
 <div class="drawer" id="drawer">
-  <div class="drawer-inner" id="drawer-content"></div>
+  <div class="drawer-inner" id="drawer-content" style="padding:26px;"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -110,28 +117,22 @@
 <script src="../js/store.js"></script>
 <script>
 let currentAdmin = null;
+
 MDR.onAuthChange(admin => {
-  if (!admin) {
-    window.location.href = 'login.html';
-    return;
-  }
+  if (!admin) { window.location.href = 'login.html'; return; }
   if (admin.noProfile) {
-    alert('A tua conta não tem permissões configuradas nesta plataforma. Contacta o administrador para te atribuir um nível de acesso.');
+    alert('A tua conta não tem permissões configuradas nesta plataforma.');
     MDR.adminLogout().then(() => window.location.href = 'login.html');
     return;
   }
-  currentAdmin = admin;
-
-  const roleLabels = { admin: 'Administrador geral', provincial: `Gestor provincial — ${admin.province}`, readonly: 'Só leitura' };
-  document.getElementById('admin-name-label').textContent = `${admin.name} · ${roleLabels[admin.role] || admin.role}`;
-  document.getElementById('users-link').style.display = admin.role === 'admin' ? '' : 'none';
-  document.getElementById('vbg-link').style.display = admin.isVbgAuthorized ? '' : 'none';
-
-  // Nível "provincial": a província fica fixa e não pode ser alterada.
-  if (admin.role === 'provincial') {
-    state.province = admin.province;
+  if (!admin.isVbgAuthorized) {
+    document.getElementById('denied-area').style.display = 'block';
+    document.getElementById('admin-name-label').textContent = admin.name;
+    return;
   }
-
+  currentAdmin = admin;
+  document.getElementById('main-area').style.display = 'block';
+  document.getElementById('admin-name-label').textContent = admin.name;
   renderProvinceFilters();
   loadCases();
 });
@@ -144,20 +145,16 @@ document.getElementById('logout-link').addEventListener('click', (e) => {
 let state = { status: '', province: '', q: '' };
 
 function renderProvinceFilters() {
-  const provinceFiltersEl = document.getElementById('province-filters');
-  if (currentAdmin && currentAdmin.role === 'provincial') {
-    provinceFiltersEl.innerHTML = `<button class="filter-option is-active" disabled>${currentAdmin.province} (a tua província)</button>`;
-    return;
-  }
-  provinceFiltersEl.innerHTML = `<button class="filter-option is-active" data-filter="province" data-value="">Todas</button>` +
+  const el = document.getElementById('province-filters');
+  el.innerHTML = `<button class="filter-option is-active" data-filter="province" data-value="">Todas</button>` +
     MDR.getProvinces().map(p => `<button class="filter-option" data-filter="province" data-value="${p}">${p}</button>`).join('');
 }
 
-document.querySelector('.admin-sidebar').addEventListener('click', handleFilterClick);
+document.querySelector('.admin-sidebar')?.addEventListener('click', handleFilterClick);
 
 function handleFilterClick(e) {
   const btn = e.target.closest('.filter-option');
-  if (!btn || btn.disabled) return;
+  if (!btn) return;
   const group = btn.dataset.filter;
   document.querySelectorAll(`.filter-option[data-filter="${group}"]`).forEach(b => b.classList.remove('is-active'));
   btn.classList.add('is-active');
@@ -173,25 +170,24 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 
 async function loadCases() {
   const tbody = document.getElementById('cases-tbody');
-  tbody.innerHTML = `<tr><td colspan="7" class="skeleton" style="height:40px;"></td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>`;
 
   try {
-    const rows = await MDR.listComplaints(state);
-    document.getElementById('results-count').textContent = `${rows.length} caso(s) encontrado(s)`;
+    const rows = await MDR.listVbgComplaints(state);
+    document.getElementById('results-count').textContent = `${rows.length} caso(s) confidencial(is) encontrado(s)`;
 
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="small-note" style="padding:24px;">Nenhum caso encontrado com estes filtros.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="small-note" style="padding:24px;">Nenhum caso encontrado com estes filtros.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = rows.map(c => `
       <tr data-id="${c.reference_code}">
         <td class="ref-code">${c.reference_code}</td>
-        <td class="small-note">${escapeHtml(MDR.getConcernTypes()[c.concern_type] || '—')}</td>
         <td>${escapeHtml(c.subject)}</td>
         <td>${[c.province, c.district].filter(Boolean).join(', ') || '—'}</td>
-        <td>${escapeHtml(c.project || '—')}</td>
         <td><span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span></td>
+        <td style="text-transform:capitalize;">${c.priority}</td>
         <td class="small-note">${formatDate(c.created_at)}</td>
       </tr>
     `).join('');
@@ -201,7 +197,7 @@ async function loadCases() {
     });
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="7"><div class="alert alert-error">Não foi possível carregar os casos.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="alert alert-error">Não foi possível carregar os casos.</div></td></tr>`;
   }
 }
 
@@ -224,7 +220,7 @@ async function openDrawer(referenceCode) {
   document.getElementById('drawer-content').innerHTML = `<div class="skeleton" style="height:200px;"></div>`;
 
   try {
-    const c = await MDR.getComplaint(referenceCode);
+    const c = await MDR.getVbgComplaint(referenceCode);
     if (!c) throw new Error('Caso não encontrado.');
     renderDrawer(c);
   } catch (err) {
@@ -233,10 +229,28 @@ async function openDrawer(referenceCode) {
   }
 }
 
+// Nesta fila confidencial, todas as pessoas autorizadas (Administrador
+// geral ou alguém com vbg_access) podem executar todos os passos — é um
+// grupo pequeno e de confiança, sem a separação provincial/admin da fila
+// normal de casos.
+const VBG_STEPS = {
+  recebida: [{ to: 'registada', label: 'Registar caso' }],
+  em_analise: [{ to: 'registada', label: 'Registar caso' }],
+  registada: [
+    { to: 'procedente', label: 'Aprovar (Procedente)' },
+    { to: 'nao_procedente', label: 'Marcar Não Procedente' },
+  ],
+  procedente: [{ to: 'em_resolucao', label: 'Iniciar seguimento' }],
+  nao_procedente: [{ to: 'encerrada', label: 'Encerrar caso' }],
+  em_resolucao: [{ to: 'resolvida', label: 'Marcar como Resolvida' }],
+  resolvida: [{ to: 'encerrada', label: 'Encerrar caso' }],
+  encerrada: [],
+};
+
 function renderDrawer(c) {
   const meta = [c.province, c.district, c.posto_administrativo].filter(Boolean).join(', ');
   const attachmentsHtml = (c.attachments || []).length ? c.attachments.map(a => `
-    <div class="attach-item">
+    <div class="attach-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border:1px solid var(--line); border-radius:7px; margin-bottom:8px; font-size:0.85rem;">
       <span>${escapeHtml(a.name)}</span>
       <a href="${a.dataUrl}" download="${escapeHtml(a.name)}" class="btn btn-secondary btn-sm">Ver</a>
     </div>
@@ -251,13 +265,11 @@ function renderDrawer(c) {
     </li>
   `).join('');
 
-  const canEdit = currentAdmin && currentAdmin.role !== 'readonly';
-  const isAdminGeral = currentAdmin && currentAdmin.role === 'admin';
-  const concernLabel = MDR.getConcernTypes()[c.concern_type] || c.concern_type || '—';
-
-  const updateSectionHtml = canEdit ? renderWorkflowPanel(c, isAdminGeral) : `
-    <div class="small-note" style="margin-top:20px; padding:12px; border:1px solid var(--line); border-radius:8px;">A tua conta tem acesso apenas de leitura — não podes alterar este caso.</div>
-  `;
+  const available = VBG_STEPS[c.status] || [];
+  const waitingMessages = { encerrada: 'Este caso está encerrado.' };
+  const actionsHtml = available.length
+    ? available.map(s => `<button type="button" class="btn btn-primary btn-sm vbg-workflow-btn" data-to="${s.to}">${s.label}</button>`).join(' ')
+    : (waitingMessages[c.status] || '<span class="small-note">Sem acções disponíveis.</span>');
 
   document.getElementById('drawer-content').innerHTML = `
     <button class="drawer-close" onclick="closeDrawer()">&times;</button>
@@ -266,8 +278,6 @@ function renderDrawer(c) {
     <span class="badge badge-${c.status}">${MDR.STATUS_LABELS[c.status] || c.status}</span>
 
     <dl class="kv">
-      <dt>Tipo</dt><dd>${escapeHtml(concernLabel)}</dd>
-      <dt>Componente</dt><dd>${escapeHtml(c.project || '—')}</dd>
       <dt>Localização</dt><dd>${escapeHtml(meta || '—')}</dd>
       <dt>Comunidade</dt><dd>${escapeHtml(c.community)}</dd>
       <dt>Ocorrência</dt><dd>${c.occurrence_date || '—'}</dd>
@@ -283,54 +293,12 @@ function renderDrawer(c) {
     <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:20px 0 8px;">Histórico</h4>
     <ul class="thread-timeline">${updatesHtml}</ul>
 
-    ${updateSectionHtml}
-  `;
-
-  if (!canEdit) return;
-  wireWorkflowPanel(c, isAdminGeral);
-}
-
-// Define, para cada estado, quais as acções seguintes disponíveis e quem
-// as pode executar. Isto é o que aparecia em falta antes: ao abrir um
-// caso, a pessoa via só um menu genérico em vez de passos claros.
-function renderWorkflowPanel(c, isAdminGeral) {
-  const steps = {
-    recebida: [{ to: 'registada', label: 'Registar caso', roles: ['admin', 'provincial'] }],
-    // "em_analise" é um estado antigo (de antes deste fluxo de aprovação
-    // existir) — tratamos da mesma forma que "recebida", para que casos
-    // criados antes desta actualização continuem a poder avançar.
-    em_analise: [{ to: 'registada', label: 'Registar caso', roles: ['admin', 'provincial'] }],
-    registada: [
-      { to: 'procedente', label: 'Aprovar (Procedente)', roles: ['admin'] },
-      { to: 'nao_procedente', label: 'Marcar Não Procedente', roles: ['admin'] },
-    ],
-    procedente: [{ to: 'em_resolucao', label: 'Iniciar seguimento', roles: ['admin', 'provincial'] }],
-    nao_procedente: [{ to: 'encerrada', label: 'Encerrar caso', roles: ['admin'] }],
-    em_resolucao: [{ to: 'resolvida', label: 'Marcar como Resolvida', roles: ['admin', 'provincial'] }],
-    resolvida: [{ to: 'encerrada', label: 'Encerrar caso', roles: ['admin'] }],
-    encerrada: [],
-  };
-
-  const role = isAdminGeral ? 'admin' : 'provincial';
-  const available = (steps[c.status] || []).filter(s => s.roles.includes(role));
-  const waitingMessages = {
-    registada: 'Este caso está registado e aguarda aprovação do administrador geral (Procedente / Não Procedente).',
-    nao_procedente: 'Este caso foi considerado não procedente e aguarda encerramento pelo administrador geral.',
-    resolvida: 'Este caso está marcado como resolvido e aguarda encerramento pelo administrador geral.',
-    encerrada: 'Este caso está encerrado.',
-  };
-
-  const actionsHtml = available.length
-    ? available.map(s => `<button type="button" class="btn btn-primary btn-sm workflow-btn" data-to="${s.to}">${s.label}</button>`).join(' ')
-    : (waitingMessages[c.status] ? `<p class="small-note">${waitingMessages[c.status]}</p>` : '');
-
-  return `
     <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted); margin:24px 0 8px;">Próximos passos</h4>
     <div id="update-alert"></div>
     <div class="form-card" style="padding:18px;">
       <div class="field" style="margin-bottom:14px;">
         <label>Acção</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">${actionsHtml || '<span class="small-note">Sem acções disponíveis para o teu nível de acesso neste momento.</span>'}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">${actionsHtml}</div>
       </div>
       <div class="field">
         <label for="upd-priority">Prioridade</label>
@@ -342,7 +310,7 @@ function renderWorkflowPanel(c, isAdminGeral) {
         </select>
       </div>
       <div class="field">
-        <label for="upd-note">Nota (usada pela acção acima, ou guardada sozinha)</label>
+        <label for="upd-note">Nota</label>
         <textarea id="upd-note" placeholder="Descreva a acção tomada ou o ponto de situação"></textarea>
       </div>
       <div class="checkbox-row" style="margin-bottom:16px;">
@@ -352,49 +320,42 @@ function renderWorkflowPanel(c, isAdminGeral) {
       <button type="button" class="btn btn-secondary btn-block" id="save-note-btn">Guardar nota / prioridade (sem mudar estado)</button>
     </div>
   `;
-}
 
-function wireWorkflowPanel(c, isAdminGeral) {
   const alertEl = document.getElementById('update-alert');
 
   async function runUpdate(payload, btn) {
     alertEl.innerHTML = '';
-    const original = btn.textContent;
     btn.disabled = true;
+    const original = btn.textContent;
     btn.innerHTML = '<span class="spinner"></span>';
     try {
-      await MDR.updateComplaint(c.reference_code, payload);
+      await MDR.updateVbgComplaint(c.reference_code, payload);
       openDrawer(c.reference_code);
       loadCases();
     } catch (err) {
       console.error(err);
-      alertEl.innerHTML = `<div class="alert alert-error">${err.message || 'Não foi possível guardar a actualização.'}</div>`;
+      alertEl.innerHTML = `<div class="alert alert-error">${err.message || 'Não foi possível guardar.'}</div>`;
       btn.disabled = false;
       btn.textContent = original;
     }
   }
 
-  document.querySelectorAll('.workflow-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      runUpdate({
-        status: btn.dataset.to,
-        priority: document.getElementById('upd-priority').value,
-        note: document.getElementById('upd-note').value || null,
-        visible_to_public: document.getElementById('upd-visible').checked,
-      }, btn);
-    });
+  document.querySelectorAll('.vbg-workflow-btn').forEach(btn => {
+    btn.addEventListener('click', () => runUpdate({
+      status: btn.dataset.to,
+      priority: document.getElementById('upd-priority').value,
+      note: document.getElementById('upd-note').value || null,
+      visible_to_public: document.getElementById('upd-visible').checked,
+    }, btn));
   });
 
-  const saveNoteBtn = document.getElementById('save-note-btn');
-  if (saveNoteBtn) {
-    saveNoteBtn.addEventListener('click', () => {
-      runUpdate({
-        priority: document.getElementById('upd-priority').value,
-        note: document.getElementById('upd-note').value || null,
-        visible_to_public: document.getElementById('upd-visible').checked,
-      }, saveNoteBtn);
-    });
-  }
+  document.getElementById('save-note-btn').addEventListener('click', function () {
+    runUpdate({
+      priority: document.getElementById('upd-priority').value,
+      note: document.getElementById('upd-note').value || null,
+      visible_to_public: document.getElementById('upd-visible').checked,
+    }, this);
+  });
 }
 
 function formatDate(iso) {
@@ -406,8 +367,7 @@ function escapeHtml(str) {
   div.textContent = str == null ? '' : str;
   return div.innerHTML;
 }
-</script>
-<script>
+
 document.getElementById('nav-toggle')?.addEventListener('click', () => {
   const nav = document.querySelector('.main-nav');
   const open = nav.classList.toggle('is-open');

@@ -29,6 +29,7 @@
     </button>
     <nav class="main-nav">
       <a href="dashboard.html">Casos</a>
+      <a href="vbg.html" style="color:var(--brick); font-weight:700;">VBG/PSEA</a>
       <span class="small-note" id="admin-name-label" style="margin-right:8px;"></span>
       <a href="#" id="logout-link">Sair</a>
     </nav>
@@ -49,9 +50,9 @@
       <div id="alert-box"></div>
 
       <table class="users">
-        <thead><tr><th>Nome</th><th>Email</th><th>Nível de acesso</th><th>Província</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>Email</th><th>Nível de acesso</th><th>Província</th><th>VBG/PSEA</th><th></th></tr></thead>
         <tbody id="users-tbody">
-          <tr><td colspan="5" class="skeleton" style="height:40px;"></td></tr>
+          <tr><td colspan="6" class="skeleton" style="height:40px;"></td></tr>
         </tbody>
       </table>
 
@@ -87,6 +88,10 @@
               <option value="">—</option>
             </select>
           </div>
+        </div>
+        <div class="checkbox-row" style="margin-bottom:18px;">
+          <input type="checkbox" id="vbg_access">
+          <label for="vbg_access">Acesso à fila confidencial de VBG/PSEA (o Administrador geral tem sempre acesso, mesmo sem marcar esta opção)</label>
         </div>
         <button type="submit" class="btn btn-primary" id="save-btn">Guardar utilizador</button>
       </div>
@@ -131,7 +136,7 @@ async function loadUsers() {
   try {
     const users = await MDR.listAdminUsers();
     if (!users.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="small-note" style="padding:20px;">Ainda não há utilizadores configurados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="small-note" style="padding:20px;">Ainda não há utilizadores configurados.</td></tr>`;
       return;
     }
     tbody.innerHTML = users.map(u => `
@@ -140,6 +145,7 @@ async function loadUsers() {
         <td class="small-note">${escapeHtml(u.email || '—')}</td>
         <td><span class="role-tag role-${u.role}">${roleLabels[u.role] || u.role}</span></td>
         <td>${escapeHtml(u.province || '—')}</td>
+        <td>${u.role === 'admin' ? '<span class="small-note">sempre</span>' : (u.vbg_access ? '<span class="role-tag role-provincial">Sim</span>' : '<span class="small-note">Não</span>')}</td>
         <td style="text-align:right;">
           <button class="btn btn-secondary btn-sm" onclick="editUser('${u.uid}')">Editar</button>
           <button class="btn btn-secondary btn-sm" onclick="removeUser('${u.uid}')">Remover acesso</button>
@@ -149,7 +155,7 @@ async function loadUsers() {
     window._usersCache = users;
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="5"><div class="alert alert-error">Não foi possível carregar os utilizadores.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="alert alert-error">Não foi possível carregar os utilizadores.</div></td></tr>`;
   }
 }
 
@@ -161,6 +167,7 @@ function editUser(uid) {
   document.getElementById('email').value = u.email || '';
   document.getElementById('role').value = u.role;
   document.getElementById('province').value = u.province || '';
+  document.getElementById('vbg_access').checked = !!u.vbg_access;
   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
@@ -182,14 +189,16 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   const email = document.getElementById('email').value.trim();
   const role = document.getElementById('role').value;
   const province = document.getElementById('province').value;
+  const vbg_access = document.getElementById('vbg_access').checked;
 
   try {
-    await MDR.upsertAdminUser(uid, { name, email, role, province });
+    await MDR.upsertAdminUser(uid, { name, email, role, province, vbg_access });
     document.getElementById('uid').value = '';
     document.getElementById('name').value = '';
     document.getElementById('email').value = '';
     document.getElementById('role').value = 'admin';
     document.getElementById('province').value = '';
+    document.getElementById('vbg_access').checked = false;
     loadUsers();
     alertBox.innerHTML = `<div class="alert alert-success">Utilizador guardado.</div>`;
   } catch (err) {
