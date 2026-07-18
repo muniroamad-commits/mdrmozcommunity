@@ -247,6 +247,7 @@ function renderDrawer(c) {
       <span class="node"></span>
       <div class="tl-status">${MDR.STATUS_LABELS[u.status] || u.status}${u.admin_name ? ` · <span class="small-note">${escapeHtml(u.admin_name)}</span>` : ''}</div>
       ${u.note ? `<div class="tl-note">${escapeHtml(u.note)}</div>` : ''}
+      ${(u.evidence || []).map(ev => `<div class="tl-note"><a href="${ev.dataUrl}" download="${escapeHtml(ev.name)}" class="btn btn-secondary btn-sm">📎 ${escapeHtml(ev.name)}</a></div>`).join('')}
       <div class="tl-date">${formatDate(u.created_at)} ${u.visible_to_public ? '' : '· <span title="Nota interna, não visível ao público">interno</span>'}</div>
     </li>
   `).join('');
@@ -345,6 +346,11 @@ function renderWorkflowPanel(c, isAdminGeral) {
         <label for="upd-note">Nota (usada pela acção acima, ou guardada sozinha)</label>
         <textarea id="upd-note" placeholder="Descreva a acção tomada ou o ponto de situação"></textarea>
       </div>
+      <div class="field">
+        <label for="upd-evidence">Anexar evidência (foto ou documento, opcional)</label>
+        <input type="file" id="upd-evidence" accept=".jpg,.jpeg,.png,.webp,.pdf" style="padding:8px;">
+        <div class="hint">Até 120KB, 1 ficheiro por actualização — fica associado a este passo do caso, no histórico.</div>
+      </div>
       <div class="checkbox-row" style="margin-bottom:16px;">
         <input type="checkbox" id="upd-visible" checked>
         <label for="upd-visible">Visível para quem apresentou o caso (em "Acompanhar Preocupação")</label>
@@ -363,7 +369,11 @@ function wireWorkflowPanel(c, isAdminGeral) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
     try {
-      await MDR.updateComplaint(c.reference_code, payload);
+      const evidenceFiles = document.getElementById('upd-evidence').files;
+      const result = await MDR.updateComplaint(c.reference_code, { ...payload, evidenceFiles });
+      if (result.evidenceSkipped && result.evidenceSkipped.length) {
+        alert(`O ficheiro "${result.evidenceSkipped.join(', ')}" não foi anexado por exceder 120KB.`);
+      }
       openDrawer(c.reference_code);
       loadCases();
     } catch (err) {

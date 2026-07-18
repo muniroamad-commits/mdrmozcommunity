@@ -173,10 +173,18 @@ const MDR = (() => {
   const MAX_FILES = 2;
   const MAX_FILE_BYTES = 250 * 1024; // ~250KB por ficheiro
 
-  function filesToAttachments(fileList) {
-    const files = Array.from(fileList || []).slice(0, MAX_FILES);
-    const tooBig = files.filter(f => f.size > MAX_FILE_BYTES);
-    const usable = files.filter(f => f.size <= MAX_FILE_BYTES);
+  // Evidências anexadas durante o SEGUIMENTO do caso (em cada actualização
+  // de estado) têm um limite ainda mais apertado do que a submissão
+  // inicial, porque se vão acumulando ao longo de todo o histórico do
+  // mesmo caso — e o documento inteiro tem de caber sempre no limite de
+  // 1MiB do Firestore.
+  const MAX_EVIDENCE_FILES = 1;
+  const MAX_EVIDENCE_BYTES = 120 * 1024; // ~120KB por ficheiro
+
+  function filesToAttachments(fileList, maxFiles = MAX_FILES, maxBytes = MAX_FILE_BYTES) {
+    const files = Array.from(fileList || []).slice(0, maxFiles);
+    const tooBig = files.filter(f => f.size > maxBytes);
+    const usable = files.filter(f => f.size <= maxBytes);
 
     const readers = usable.map(file => new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -189,6 +197,10 @@ const MDR = (() => {
       attachments,
       skipped: tooBig.map(f => f.name),
     }));
+  }
+
+  function filesToEvidence(fileList) {
+    return filesToAttachments(fileList, MAX_EVIDENCE_FILES, MAX_EVIDENCE_BYTES);
   }
 
   // ---------- Reclamações (público) ----------
@@ -316,7 +328,7 @@ const MDR = (() => {
     return snap.exists ? snap.data() : null;
   }
 
-  async function updateComplaint(referenceCode, { status, priority, note, visible_to_public }) {
+  async function updateComplaint(referenceCode, { status, priority, note, visible_to_public, evidenceFiles }) {
     const admin = getCurrentAdminSync();
     if (!admin || admin.noProfile) throw new Error('A tua conta não tem permissões configuradas. Contacta o administrador.');
     if (admin.role === 'readonly') throw new Error('A tua conta tem acesso apenas de leitura — não podes actualizar casos.');
@@ -334,15 +346,18 @@ const MDR = (() => {
       throw new Error('Só o administrador geral pode aprovar (procedente/não procedente) ou encerrar um caso. Tu podes registar, dar seguimento e marcar como resolvido.');
     }
 
+    const { attachments: evidence, skipped: evidenceSkipped } = await filesToEvidence(evidenceFiles);
+
     const updated = { ...record };
     if (status) updated.status = status;
     if (priority) updated.priority = priority;
     updated.updated_at = nowIso();
 
-    if (note || status) {
+    if (note || status || evidence.length) {
       updated.updates = [...(record.updates || []), {
         status: status || record.status,
         note: note || null,
+        evidence,
         visible_to_public: visible_to_public !== false,
         admin_name: admin ? admin.name : null,
         created_at: nowIso(),
@@ -358,7 +373,7 @@ const MDR = (() => {
       );
     }
 
-    return updated;
+    return { ...updated, evidenceSkipped };
   }
 
   // ---------- Fila confidencial de VBG/PSEA ----------
@@ -401,7 +416,7 @@ const MDR = (() => {
     return snap.exists ? snap.data() : null;
   }
 
-  async function updateVbgComplaint(referenceCode, { status, priority, note, visible_to_public }) {
+  async function updateVbgComplaint(referenceCode, { status, priority, note, visible_to_public, evidenceFiles }) {
     const admin = requireVbgAccess();
 
     const ref = db.collection(COMPLAINTS_SENSITIVE).doc(referenceCode);
@@ -409,15 +424,18 @@ const MDR = (() => {
     if (!snap.exists) throw new Error('Caso não encontrado.');
     const record = snap.data();
 
+    const { attachments: evidence, skipped: evidenceSkipped } = await filesToEvidence(evidenceFiles);
+
     const updated = { ...record };
     if (status) updated.status = status;
     if (priority) updated.priority = priority;
     updated.updated_at = nowIso();
 
-    if (note || status) {
+    if (note || status || evidence.length) {
       updated.updates = [...(record.updates || []), {
         status: status || record.status,
         note: note || null,
+        evidence,
         visible_to_public: visible_to_public !== false,
         admin_name: admin ? admin.name : null,
         created_at: nowIso(),
@@ -425,7 +443,7 @@ const MDR = (() => {
     }
 
     await ref.set(updated);
-    return updated;
+    return { ...updated, evidenceSkipped };
   }
 
   // ---------- Estatísticas públicas ----------

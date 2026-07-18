@@ -114,6 +114,7 @@ function renderResult(data) {
       <span class="node"></span>
       <div class="tl-status">${MDR.STATUS_LABELS[u.status] || u.status}</div>
       ${u.note ? `<div class="tl-note">${escapeHtml(u.note)}</div>` : ''}
+      ${(u.evidence || []).map(ev => `<div class="tl-note"><a href="${ev.dataUrl}" download="${escapeHtml(ev.name)}" class="btn btn-secondary btn-sm">📎 ${escapeHtml(ev.name)}</a></div>`).join('')}
       <div class="tl-date">${formatDate(u.created_at)}</div>
     </li>
   `).join('');

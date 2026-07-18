@@ -312,3 +312,19 @@ Só leitura). Isto significa:
   explicitamente atribuída em "Gestão de Utilizadores" — **incluindo o
   Administrador geral**, que só o vê se também lhe atribuíres essa marcação.
   Não há nenhum acesso automático por defeito para ninguém.
+
+## Evidências em cada etapa do caso
+
+Além dos anexos da submissão inicial, a equipa (provincial ou administrador)
+pode anexar uma evidência (foto ou documento) em **cada actualização** do
+caso — ao registar, ao aprovar/rejeitar, ao dar seguimento, ao marcar como
+resolvido, ou ao encerrar. Cada evidência fica associada a esse passo
+específico no histórico, criando um registo com prova em cada etapa.
+
+Por se tratarem de ficheiros guardados directamente no documento Firestore
+(limite de 1MiB no total), o limite por ficheiro de evidência é mais
+apertado (120KB, 1 ficheiro por actualização) do que na submissão inicial —
+porque as evidências se vão somando ao longo de todo o histórico do mesmo
+caso. Se um caso tiver um histórico muito longo com muitas evidências
+grandes, considera migrar para o Firebase Storage (ver nota nas
+Limitações desta arquitectura, mais acima).
