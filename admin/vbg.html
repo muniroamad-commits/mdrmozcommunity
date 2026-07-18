@@ -34,6 +34,23 @@
   .kv dt { color: var(--ink-muted); }
   .kv dd { margin: 0; }
   .denied { max-width: 520px; margin: 60px auto; text-align: center; }
+
+  @media (max-width: 860px) {
+    .admin-shell { grid-template-columns: 1fr; }
+    .admin-sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 16px;
+    }
+    .admin-sidebar h4 { width: 100%; margin: 6px 0 0; }
+    .admin-sidebar h4:first-child { margin-top: 0; }
+    .admin-sidebar .filter-option { width: auto; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; }
+    .admin-sidebar .filter-option.is-active { border-color: var(--brick); }
+  }
 </style>
 </head>
 <body>
