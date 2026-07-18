@@ -84,7 +84,10 @@
         <h2 style="margin:0;">Casos registados</h2>
         <p class="small-note" style="margin:2px 0 0;" id="results-count">A carregar...</p>
       </div>
-      <input type="search" class="search-input" id="search-input" placeholder="Pesquisar por assunto, código, comunidade, nome ou telefone...">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input type="search" class="search-input" id="search-input" placeholder="Pesquisar por assunto, código, comunidade, nome ou telefone...">
+        <button type="button" class="btn btn-secondary btn-sm" id="delete-all-btn" style="display:none; border-color:var(--brick); color:var(--brick);">Apagar todos os casos</button>
+      </div>
     </div>
 
     <table class="cases">
@@ -126,6 +129,7 @@ MDR.onAuthChange(admin => {
   document.getElementById('admin-name-label').textContent = `${admin.name} · ${roleLabels[admin.role] || admin.role}`;
   document.getElementById('users-link').style.display = admin.role === 'admin' ? '' : 'none';
   document.getElementById('vbg-link').style.display = admin.isVbgAuthorized ? '' : 'none';
+  document.getElementById('delete-all-btn').style.display = admin.role === 'admin' ? '' : 'none';
 
   // Nível "provincial": a província fica fixa e não pode ser alterada.
   if (admin.role === 'provincial') {
@@ -169,6 +173,22 @@ let searchTimeout;
 document.getElementById('search-input').addEventListener('input', (e) => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => { state.q = e.target.value; loadCases(); }, 350);
+});
+
+document.getElementById('delete-all-btn').addEventListener('click', async () => {
+  const typed = prompt('Isto apaga PERMANENTEMENTE TODOS os casos normais (não afecta a fila confidencial de VBG/PSEA). Não há forma de recuperar depois. Para confirmar, escreve exactamente: APAGAR TUDO');
+  if (typed !== 'APAGAR TUDO') {
+    if (typed !== null) alert('Texto não corresponde — nada foi apagado.');
+    return;
+  }
+  try {
+    const n = await MDR.deleteAllComplaints();
+    alert(`${n} caso(s) apagado(s).`);
+    loadCases();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Não foi possível apagar os casos.');
+  }
 });
 
 async function loadCases() {
@@ -285,7 +305,30 @@ function renderDrawer(c) {
     <ul class="thread-timeline">${updatesHtml}</ul>
 
     ${updateSectionHtml}
+
+    ${isAdminGeral ? `
+      <h4 style="font-family:var(--font-mono); font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--brick); margin:24px 0 8px;">Zona de risco</h4>
+      <button type="button" class="btn btn-secondary btn-block" id="delete-case-btn" style="border-color:var(--brick); color:var(--brick);">Apagar este caso permanentemente</button>
+    ` : ''}
   `;
+
+  if (isAdminGeral) {
+    document.getElementById('delete-case-btn').addEventListener('click', async () => {
+      const typed = prompt(`Isto apaga PERMANENTEMENTE o caso ${c.reference_code}. Não há forma de recuperar depois. Para confirmar, escreve exactamente: APAGAR`);
+      if (typed !== 'APAGAR') {
+        if (typed !== null) alert('Texto não corresponde — o caso não foi apagado.');
+        return;
+      }
+      try {
+        await MDR.deleteComplaint(c.reference_code);
+        closeDrawer();
+        loadCases();
+      } catch (err) {
+        console.error(err);
+        alert(err.message || 'Não foi possível apagar o caso.');
+      }
+    });
+  }
 
   if (!canEdit) return;
   wireWorkflowPanel(c, isAdminGeral);

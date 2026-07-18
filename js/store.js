@@ -376,6 +376,34 @@ const MDR = (() => {
     return { ...updated, evidenceSkipped };
   }
 
+  function requireAdminGeral(actionLabel) {
+    const admin = getCurrentAdminSync();
+    if (!admin || admin.noProfile) throw new Error('A tua conta não tem permissões configuradas.');
+    if (admin.role !== 'admin') throw new Error(`Só o Administrador geral pode ${actionLabel}.`);
+    return admin;
+  }
+
+  async function deleteComplaint(referenceCode) {
+    requireAdminGeral('apagar casos');
+    await db.collection(COMPLAINTS).doc(referenceCode).delete();
+    // Apaga também o espelho público correspondente, se existir.
+    await db.collection(COMPLAINTS_PUBLIC).doc(referenceCode).delete().catch(() => {});
+  }
+
+  async function deleteAllComplaints() {
+    requireAdminGeral('apagar todos os casos');
+    const snap = await db.collection(COMPLAINTS).get();
+    const publicSnap = await db.collection(COMPLAINTS_PUBLIC).get();
+    // Firestore só permite 500 operações por lote — divide em grupos.
+    const allDocs = [...snap.docs, ...publicSnap.docs];
+    for (let i = 0; i < allDocs.length; i += 450) {
+      const batch = db.batch();
+      allDocs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    return snap.size;
+  }
+
   // ---------- Fila confidencial de VBG/PSEA ----------
   // Só acessível a quem tiver "isVbgAuthorized" (Administrador geral, ou
   // alguém com vbg_access atribuído em "Gestão de Utilizadores"). Estes
@@ -444,6 +472,22 @@ const MDR = (() => {
 
     await ref.set(updated);
     return { ...updated, evidenceSkipped };
+  }
+
+  async function deleteVbgComplaint(referenceCode) {
+    requireAdminGeral('apagar casos');
+    await db.collection(COMPLAINTS_SENSITIVE).doc(referenceCode).delete();
+  }
+
+  async function deleteAllVbgComplaints() {
+    requireAdminGeral('apagar todos os casos');
+    const snap = await db.collection(COMPLAINTS_SENSITIVE).get();
+    for (let i = 0; i < snap.docs.length; i += 450) {
+      const batch = db.batch();
+      snap.docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    return snap.size;
   }
 
   // ---------- Estatísticas públicas ----------
@@ -585,8 +629,8 @@ const MDR = (() => {
     STATUS_LABELS, STATUS_ORDER, PROVINCIAL_ALLOWED_STATUSES,
     getProvinces, getDistricts, getPostos, getProjects, getConcernTypes,
     submitComplaint, trackComplaint,
-    listComplaints, getComplaint, updateComplaint,
-    listVbgComplaints, getVbgComplaint, updateVbgComplaint,
+    listComplaints, getComplaint, updateComplaint, deleteComplaint, deleteAllComplaints,
+    listVbgComplaints, getVbgComplaint, updateVbgComplaint, deleteVbgComplaint, deleteAllVbgComplaints,
     getPublicStats,
     adminLogin, adminLogout, onAuthChange, getCurrentAdminSync, changeAdminPassword,
     listAdminUsers, upsertAdminUser, removeAdminUser,

@@ -101,8 +101,8 @@ service cloud.firestore {
       // Actualizar um caso: depende do nível de acesso (ver funções acima).
       allow update: if canEditComplaint(resource.data.province);
 
-      // Ninguém apaga reclamações a partir do site.
-      allow delete: if false;
+      // Apagar um caso: exclusivo do Administrador geral.
+      allow delete: if isAdminGeral();
     }
 
     // Espelho público, sem dados pessoais (nome, contacto, assunto,
@@ -120,7 +120,9 @@ service cloud.firestore {
         ]);
 
       allow update: if isSignedIn();
-      allow delete: if false;
+      // Apagado junto com o caso correspondente em "complaints", também
+      // exclusivo do Administrador geral.
+      allow delete: if isAdminGeral();
     }
 
     // Fila CONFIDENCIAL de casos de VBG/PSEA — completamente separada da
@@ -141,7 +143,9 @@ service cloud.firestore {
         ]);
 
       allow update: if isVbgAuthorized();
-      allow delete: if false;
+      // Apagar um caso confidencial: exclusivo do Administrador geral
+      // (não basta ter acesso à fila — tem de ser mesmo role "admin").
+      allow delete: if isAdminGeral();
     }
 
     // Perfis administrativos: nome, papel (role) e província de cada

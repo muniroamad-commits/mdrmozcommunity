@@ -328,3 +328,20 @@ porque as evidências se vão somando ao longo de todo o histórico do mesmo
 caso. Se um caso tiver um histórico muito longo com muitas evidências
 grandes, considera migrar para o Firebase Storage (ver nota nas
 Limitações desta arquitectura, mais acima).
+
+## Apagar casos (exclusivo do Administrador geral)
+
+Só quem tem o nível "Administrador geral" (role = "admin") consegue apagar
+casos — aplicado tanto na interface como nas regras do Firestore, por isso
+não pode ser contornado.
+
+- **Apagar um caso**: dentro do painel de detalhe de qualquer caso, na
+  secção "Zona de risco".
+- **Apagar todos os casos**: botão junto à barra de pesquisa, no topo da
+  lista. No painel geral apaga todos os casos normais (e o respectivo
+  espelho público); na fila VBG/PSEA apaga só os casos confidenciais — são
+  acções independentes uma da outra.
+
+Ambas as acções pedem confirmação explícita, escrevendo uma palavra exacta
+("APAGAR" ou "APAGAR TUDO") — não há forma de apagar por engano com um
+único clique, e a eliminação é permanente e não pode ser desfeita.
